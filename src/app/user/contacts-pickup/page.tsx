@@ -550,7 +550,7 @@ export default function ContactsPickupPage() {
 
         {/* Footer Help */}
         <footer className="mt-16 pt-8 border-t border-slate-200 flex justify-between items-center text-slate-400 text-sm">
-          <p>© 2024 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
+          <p>© 2026 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
           <div className="flex gap-6">
             <a className="hover:text-primary" href="#">
               Privacy Policy

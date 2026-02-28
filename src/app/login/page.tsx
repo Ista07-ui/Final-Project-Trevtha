@@ -92,7 +92,7 @@ export default function LoginPage() {
                 Terms of Service
               </Link>
             </div>
-            <div>© 2024 TREVTHA Inc.</div>
+            <div>© 2026 TREVTHA Inc.</div>
           </div>
         </section>
       </main>

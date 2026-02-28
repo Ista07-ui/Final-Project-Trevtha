@@ -12,7 +12,7 @@ import {
 const banners = [
   {
     id: 1,
-    title: "Summer Luxury Collection 2024",
+    title: "Summer Luxury Collection 2026",
     link: "trevtha.com/home",
     size: "1920x1080",
     status: "Active",

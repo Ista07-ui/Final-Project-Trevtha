@@ -25,7 +25,7 @@ const defaultProfile: UserProfile = {
   dateOfBirth: "1988-05-14",
   identityNumber: "",
   address: "",
-  memberSince: "January 2024",
+  memberSince: "January 2026",
 };
 
 export default function PersonalInfoPage() {
@@ -107,7 +107,7 @@ export default function PersonalInfoPage() {
                   <span className="material-symbols-outlined text-[14px]">
                     calendar_today
                   </span>
-                  Member Since: January 2024
+                  Member Since: January 2026
                 </span>
               </div>
             </div>

@@ -8,7 +8,7 @@ export default function MyPromosPage() {
       description:
         "Get 20% discount for all City Tour activities in Paris and London.",
       code: "TREVTHAGOLD20",
-      conditions: ["Min. transaction $500", "Valid until Dec 31, 2024"],
+      conditions: ["Min. transaction $500", "Valid until Dec 31, 2026"],
       badge: "Limited",
       badgeColor: "accent",
       image:
@@ -31,7 +31,7 @@ export default function MyPromosPage() {
       title: "Yacht Rental Voucher",
       description: "$200 discount on your first Riviera yacht charter booking.",
       code: "RIVIERA200",
-      conditions: ["Min. booking 4 hours", "Valid until Nov 15, 2024"],
+      conditions: ["Min. booking 4 hours", "Valid until Nov 15, 2026"],
       image:
         "https://lh3.googleusercontent.com/aida-public/AB6AXuA0WIqzQTzWUBc4HgXcDHlFGMBa6OxYKx1psOJ7jAQkXpz4W40ML1eoZEt6TM2sw8aonrLSU-7W-dbCZwDtlweJ2Me61pu9ratuA3zncRM7fcNetz7s3KDyrNXOSTzLK5-8Rm4Z02UTdVbOczCUa8V37AmbL3n6K5-37OM89d78tI7yTP2QQWSv-HoIGVrJFwXRN2ltJjuXko7zd9Qi06TYwktWiUW6YMGbDmMY-HaGb31znEz_y93ceHhGjQsJSOljf5A1ClPolN1W",
     },
@@ -186,7 +186,7 @@ export default function MyPromosPage() {
         {/* Footer Section */}
         <footer className="mt-auto py-10 px-10 border-t border-accent/10 text-center">
           <p className="text-xs text-accent/40">
-            © 2024 TREVTHA Luxury Travel Marketplace. All rights reserved.{" "}
+            © 2026 TREVTHA Luxury Travel Marketplace. All rights reserved.{" "}
             <a className="underline hover:text-primary" href="#">
               Terms of Service
             </a>{" "}

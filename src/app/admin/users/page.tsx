@@ -58,7 +58,7 @@ const users = [
     roleClass: "bg-forest/10 text-forest border-forest/20",
     status: "Active",
     statusDot: "bg-green-500",
-    joined: "Jan 12, 2024",
+    joined: "Jan 12, 2026",
     avatar:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuBVrbYJtz5MbDl0KmwoOcZda-2c2MR3U7PLXK8GmT_yg36FsyoWbZHS-0Clb4rSLuOV95Nfno141XltY5JTOztNEbRwEgO4PIPxyHV1S2YoTEOIEAboTYE9zPs4hc3h0ou1XWKsfsOFH00-rH3Pf8NaAurzYDNZO-cMAn5MnMQcCuxo5TtlBMvAt5kGtYiVRM7SGVBZbT9lUjfH4UaD8nURflQjmPRMB4YH6KgL_kGQXrtqy2UQDQjbCcGvUXfZrQ-73_I8ETYnrnSZ",
   },

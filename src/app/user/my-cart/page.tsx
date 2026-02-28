@@ -324,7 +324,10 @@ export default function MyCartPage() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  handleUpdateQuantity(item.id, item.quantity - 1)
+                                  handleUpdateQuantity(
+                                    item.id,
+                                    item.quantity - 1,
+                                  )
                                 }
                                 className="flex h-8 w-8 items-center justify-center rounded-md text-forest hover:bg-primary/20 disabled:opacity-50"
                                 disabled={isLoading}
@@ -340,7 +343,10 @@ export default function MyCartPage() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  handleUpdateQuantity(item.id, item.quantity + 1)
+                                  handleUpdateQuantity(
+                                    item.id,
+                                    item.quantity + 1,
+                                  )
                                 }
                                 className="flex h-8 w-8 items-center justify-center rounded-md text-forest hover:bg-primary/20 disabled:opacity-50"
                                 disabled={isLoading}
@@ -378,7 +384,7 @@ export default function MyCartPage() {
                 <div className="flex gap-3">
                   <input
                     className="flex-1 rounded-xl border-forest/10 bg-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
-                    placeholder="Enter code (e.g. TREVTHA2024)"
+                    placeholder="Enter code (e.g. TREVTHA2026)"
                     type="text"
                   />
                   <button className="rounded-xl bg-forest px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-charcoal">

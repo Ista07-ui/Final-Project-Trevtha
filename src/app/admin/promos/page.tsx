@@ -12,10 +12,10 @@ import {
 const promos = [
   {
     id: 1,
-    code: "TREVTHAGOLD2024",
+    code: "TREVTHAGOLD2026",
     type: "Percentage 20%",
     min: "Rp 500.000",
-    validity: "Jan 1 - Dec 31, 2024",
+    validity: "Jan 1 - Dec 31, 2026",
     status: "Active",
     statusClass: "bg-green-100 text-green-700 border-green-200",
     image:
@@ -26,7 +26,7 @@ const promos = [
     code: "SUMMER24",
     type: "Fixed Rp 50.000",
     min: "Rp 250.000",
-    validity: "Jun 1 - Aug 31, 2024",
+    validity: "Jun 1 - Aug 31, 2026",
     status: "Upcoming",
     statusClass: "bg-blue-100 text-blue-700 border-blue-200",
     image:
@@ -48,7 +48,7 @@ const promos = [
     code: "WELCOMEGOLD",
     type: "Fixed Rp 100.000",
     min: "Rp 0",
-    validity: "Jan 1 - Dec 31, 2024",
+    validity: "Jan 1 - Dec 31, 2026",
     status: "Active",
     statusClass: "bg-green-100 text-green-700 border-green-200",
     image:

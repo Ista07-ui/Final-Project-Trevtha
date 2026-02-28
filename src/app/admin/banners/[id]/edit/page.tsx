@@ -9,7 +9,7 @@ export default function EditBannerPage() {
       backHref="/admin/banners"
       saveLabel="Update Banner"
       fields={[
-        { label: "Banner Title", placeholder: "Summer Luxury Collection 2024" },
+        { label: "Banner Title", placeholder: "Summer Luxury Collection 2026" },
         { label: "Target Link", placeholder: "trevtha.com/home" },
         { label: "Image URL", placeholder: "https://..." },
         { label: "Resolution", placeholder: "1920x1080" },

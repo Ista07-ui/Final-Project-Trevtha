@@ -9,7 +9,7 @@ export default function EditTransactionPage() {
       backHref="/admin/transactions"
       saveLabel="Update Transaction"
       fields={[
-        { label: "Invoice ID", placeholder: "#TRV-2024-002" },
+        { label: "Invoice ID", placeholder: "#TRV-2026-002" },
         { label: "Customer Name", placeholder: "Marcus Aurelius" },
         { label: "Customer Email", placeholder: "m.aurelius@luxury.it" },
         { label: "Activity Name", placeholder: "Yacht Charter Amalfi" },

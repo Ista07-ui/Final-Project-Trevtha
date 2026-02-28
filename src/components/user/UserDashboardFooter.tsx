@@ -37,7 +37,7 @@ export default function UserDashboardFooter() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto text-center mt-10 text-[10px] uppercase tracking-widest opacity-40">
-        © 2024 TREVTHA Luxury Travel Marketplace. All rights reserved.
+        © 2026 TREVTHA Luxury Travel Marketplace. All rights reserved.
       </div>
     </footer>
   );

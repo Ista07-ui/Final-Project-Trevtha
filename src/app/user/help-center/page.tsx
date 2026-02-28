@@ -269,7 +269,7 @@ export default function HelpCenterPage() {
 
         {/* Footer Small */}
         <footer className="mt-auto border-t border-primary/10 p-8 text-center text-slate-500 text-xs">
-          © 2024 TREVTHA Luxury Travel Marketplace. All Rights Reserved. Private
+          © 2026 TREVTHA Luxury Travel Marketplace. All Rights Reserved. Private
           & Confidential.
         </footer>
       </main>

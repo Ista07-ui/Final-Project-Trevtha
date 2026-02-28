@@ -289,7 +289,7 @@ export default function PaymentMethodsPage() {
 
         {/* Footer Meta */}
         <footer className="max-w-5xl mx-auto mt-20 pt-8 border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-4 text-charcoal/40 text-xs">
-          <p>© 2024 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
+          <p>© 2026 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
           <div className="flex gap-6">
             <a className="hover:text-primary transition-colors" href="#">
               Privacy Policy

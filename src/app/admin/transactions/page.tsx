@@ -11,53 +11,53 @@ import {
 
 const transactions = [
   {
-    id: "#TRV-2024-001",
+    id: "#TRV-2026-001",
     customer: "Julian De Silva",
     email: "julian@villas.com",
     initials: "JD",
     activity: "Private Safari Villa",
     amount: "$2,450.00",
     method: "Visa",
-    date: "Oct 12, 2024",
+    date: "Oct 12, 2026",
     status: "Success",
     statusClass: "bg-emerald-50 text-emerald-700 border-emerald-100",
     dotClass: "bg-emerald-500",
   },
   {
-    id: "#TRV-2024-002",
+    id: "#TRV-2026-002",
     customer: "Marcus Aurelius",
     email: "m.aurelius@luxury.it",
     initials: "MA",
     activity: "Yacht Charter Amalfi",
     amount: "$12,800.00",
     method: "Transfer",
-    date: "Oct 13, 2024",
+    date: "Oct 13, 2026",
     status: "Pending",
     statusClass: "bg-amber-50 text-amber-700 border-amber-100",
     dotClass: "bg-amber-500",
   },
   {
-    id: "#TRV-2024-003",
+    id: "#TRV-2026-003",
     customer: "Elena Laurent",
     email: "e.laurent@paris.fr",
     initials: "EL",
     activity: "Helicopter Tour Alps",
     amount: "$4,200.00",
     method: "E-wallet",
-    date: "Oct 14, 2024",
+    date: "Oct 14, 2026",
     status: "Failed",
     statusClass: "bg-red-50 text-red-700 border-red-100",
     dotClass: "bg-red-500",
   },
   {
-    id: "#TRV-2024-004",
+    id: "#TRV-2026-004",
     customer: "Satoshi Nakamoto",
     email: "genesis@block.com",
     initials: "SK",
     activity: "Island Retreat Bali",
     amount: "$8,900.00",
     method: "Crypto",
-    date: "Oct 14, 2024",
+    date: "Oct 14, 2026",
     status: "Canceled",
     statusClass: "bg-gray-100 text-gray-700 border-gray-200",
     dotClass: "bg-gray-400",
@@ -304,7 +304,7 @@ export default function ManageTransactionsPage() {
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <Link
-                          href={`/admin/transactions/${item.id.replace("#TRV-2024-", "")}/edit`}
+                          href={`/admin/transactions/${item.id.replace("#TRV-2026-", "")}/edit`}
                           className="p-1.5 text-charcoal/40 hover:text-gold"
                         >
                           <span className="material-symbols-outlined text-lg">

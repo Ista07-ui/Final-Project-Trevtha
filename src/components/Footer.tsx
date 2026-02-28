@@ -17,7 +17,7 @@ export default function Footer() {
           </div>
           <p className="text-cream/60 text-sm leading-relaxed">
             Redefining luxury travel through curated experiences, premium
-            accommodations, and personalized itineraries since 2012.
+            accommodations, and personalized itineraries since 2026.
           </p>
           <div className="flex gap-4">
             <Link
@@ -114,7 +114,7 @@ export default function Footer() {
 
       {/* Bottom Bar */}
       <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-cream/40 text-xs">
-        <p>© 2024 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
+        <p>© 2026 TREVTHA Luxury Travel Marketplace. All rights reserved.</p>
         <div className="flex gap-6">
           <Link className="hover:text-primary transition-colors" href="#">
             Privacy Policy
