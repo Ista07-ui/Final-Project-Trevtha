@@ -1,30 +1,28 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        primary: "#137fec",
-        "background-light": "#f6f7f8",
-        "background-dark": "#101922",
+        primary: "#D4AF37", // Metallic Gold
+        accent: "#D4AF37", // Metallic Gold
+        charcoal: "#2F2F2F",
+        "background-light": "#f8f7f6",
+        "background-dark": "#201d12",
       },
       fontFamily: {
-        display: ["var(--font-inter)", "sans-serif"],
+        display: ["Plus Jakarta Sans", "sans-serif"],
       },
       borderRadius: {
-        DEFAULT: "0.25rem",
-        lg: "0.5rem",
-        xl: "0.75rem",
+        DEFAULT: "8px",
+        lg: "12px",
+        xl: "16px",
         full: "9999px",
       },
     },
   },
   plugins: [],
 };
+
 export default config;

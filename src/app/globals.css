@@ -1,34 +1,63 @@
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-light: #f8f7f6;
+  --background-dark: #201d12;
+  --primary: #d4af35;
+  --forest: #1b3022;
+  --gold: #d4af37;
+  --cream: #f9f7f2;
+  --charcoal: #2f2f2f;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+@theme inline {
+  --color-primary: #d4af35;
+  --color-forest: #1b3022;
+  --color-gold: #d4af37;
+  --color-cream: #f9f7f2;
+  --color-charcoal: #2f2f2f;
+  --color-background-light: #f8f7f6;
+  --color-background-dark: #201d12;
+  --font-display: var(--font-plus-jakarta);
+  --font-sans: var(--font-plus-jakarta);
+
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: var(--background-light);
+  color: var(--charcoal);
+  font-family: var(--font-plus-jakarta), sans-serif;
 }
 
-.material-symbols-outlined {
-  font-variation-settings:
-    "FILL" 0,
-    "wght" 400,
-    "GRAD" 0,
-    "opsz" 24;
+@media (prefers-color-scheme: dark) {
+  body {
+    background: var(--background-dark);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.active-tab {
+  border-bottom: 3px solid #d4af37;
+  color: #1b3022;
 }
