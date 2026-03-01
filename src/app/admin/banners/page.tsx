@@ -2,57 +2,49 @@
 
 import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
-import { useState } from "react";
-import {
-  deleteStoredAdminRecord,
-  getStoredValue,
-  useStoredAdminRecords,
-} from "@/hooks/admin/useStoredAdminRecords";
-
-const banners = [
-  {
-    id: 1,
-    title: "Summer Luxury Collection 2026",
-    link: "trevtha.com/home",
-    size: "1920x1080",
-    status: "Active",
-    statusClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAL0JxhHzwYm781-eifB-pAN1PuKPf-aA9UGZMnucQz7TH9zN80iwYlcGU6pWznxd-a2cdK1eOypSM1zu1iEIXeDg6z8DQc14iiMbQdYKu3H9MI3STht3v6-Gs3iivAQa9r2S0b-gfQYkuAc4K3fgUZ_taaON6v-MUTACFKu6IC3imyZuIDozCtx3tJ3oMPjPA8U_GVUFuxUw-ce2IOQBRMMkIH9PnlsyYcHrmAsyghMscWDfgQrwTUP7TBEfC8OwAVaAYy4ORwloDk",
-  },
-  {
-    id: 2,
-    title: "Winter Escapes Special",
-    link: "trevtha.com/deals",
-    size: "1440x900",
-    status: "Inactive",
-    statusClass: "bg-charcoal/10 text-charcoal/60 border-charcoal/10",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAVa1xLoI8O4GGh0L4Esov9uTNR2xKGgjPAWrJTg8ah0YpovP3dMeJodcRp-vJDqErg90WgiPZya0pAQlxRYv-Dkom1ohWWHpmjnk6dwWS-0t9FbbLXzh71S9J4Hr5OiD1II1vOewQvC7wd6p3rFdmL3X4Qqjfe4Y_CulR5hERX8Zeypf3EmNyXwar1qGTOy8nnsfy5e5DNRXsZ2i0g2letixm4ZYpri3wlY7A6-Wl1XYsoZrhh5CPDAPtnseapUBXNofr2c02NPJlS",
-  },
-  {
-    id: 3,
-    title: "Premium Living Brand Hero",
-    link: "trevtha.com/premium",
-    size: "2560x1440",
-    status: "Active",
-    statusClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCdOYzYQmpUUQafjHLzheRs75h2vFGa0EbxSU5zvoIr3jYp9JNEhjGhLipGZceW92J1YPTwQ80s7Zq_qiOzc7s8KTupNXVDjG8IBnbfPq3EjJKJS1tnxELfuMdIt8lVHsThzB0cuLazbOmMm7z1SOE1KfSyBioavPIwaZx44U3EDZCAKq5eM-DY6TouKC1pvxVZ7atP4oif0KXpiQrRgyCp-pLtq5jGeZ0PQEr60DagVmdtgaMTuBWpCAxlhgAIVwwylnSEGdUtUiVK",
-  },
-];
+import { useEffect, useState } from "react";
+import { bannerService, Banner } from "@/lib/services/banner";
+import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/Toast";
 
 export default function ManageBannersPage() {
-  const [deleteKey, setDeleteKey] = useState(0);
-  const storedRecords = useStoredAdminRecords("banners");
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const toast = useToast();
 
-  const handleDeleteRecord = (formId: string) => {
-    deleteStoredAdminRecord("banners", formId);
-    setDeleteKey((prev) => prev + 1);
+  useEffect(() => {
+    const fetchBanners = async () => {
+      setIsLoading(true);
+      const data = await bannerService.getAllBanners();
+      setBanners(Array.isArray(data) ? data : []);
+      setIsLoading(false);
+    };
+
+    fetchBanners();
+  }, []);
+
+  const handleDeleteBanner = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this banner?")) return;
+
+    setDeletingId(id);
+    const success = await bannerService.deleteBanner(id);
+    if (success) {
+      setBanners((prev) => prev.filter((banner) => banner.id !== id));
+      toast.success("Banner deleted successfully");
+    } else {
+      toast.error("Failed to delete banner");
+    }
+    setDeletingId(null);
   };
+
+  const totalBanners = banners.length;
+  const activeBanners = banners.filter((b) => b.status === "active").length;
+  const inactiveBanners = banners.filter((b) => b.status === "inactive").length;
 
   return (
     <AdminShell activeNav="banners">
+      <ToastContainer toasts={toast.toasts} onRemove={toast.removeToast} />
       <div className="p-10 space-y-8">
         <div className="max-w-4xl flex items-start justify-between gap-4">
           <div>
@@ -78,19 +70,25 @@ export default function ManageBannersPage() {
             <p className="text-sm font-semibold text-charcoal/50 uppercase tracking-wider">
               Total Banners
             </p>
-            <p className="text-3xl font-bold text-forest mt-1">24</p>
+            <p className="text-3xl font-bold text-forest mt-1">
+              {totalBanners}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-forest/5 shadow-sm">
             <p className="text-sm font-semibold text-charcoal/50 uppercase tracking-wider">
               Active
             </p>
-            <p className="text-3xl font-bold text-forest mt-1">18</p>
+            <p className="text-3xl font-bold text-forest mt-1">
+              {activeBanners}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-forest/5 shadow-sm">
             <p className="text-sm font-semibold text-charcoal/50 uppercase tracking-wider">
-              Scheduled
+              Inactive
             </p>
-            <p className="text-3xl font-bold text-gold mt-1">4</p>
+            <p className="text-3xl font-bold text-gold mt-1">
+              {inactiveBanners}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-forest/5 shadow-sm">
             <p className="text-sm font-semibold text-charcoal/50 uppercase tracking-wider">
@@ -124,124 +122,97 @@ export default function ManageBannersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-forest/5">
-              {storedRecords.map((record) => (
-                <tr
-                  key={`stored-${record.id}`}
-                  className="hover:bg-cream/50 transition-colors"
-                >
-                  <td className="px-6 py-5">
-                    <div className="h-16 w-16 rounded-lg bg-cream border border-forest/10 shadow-sm flex items-center justify-center text-[10px] font-bold text-forest/60">
-                      Custom
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <h4 className="font-bold text-forest">
-                      {getStoredValue(record.values, ["banner_title"])}
-                    </h4>
-                    <div className="flex gap-4 mt-1">
-                      <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          link
-                        </span>
-                        {getStoredValue(record.values, ["target_link"])}
-                      </span>
-                      <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          aspect_ratio
-                        </span>
-                        {getStoredValue(record.values, ["resolution"])}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-gold/15 text-forest border-gold/20">
-                      {getStoredValue(record.values, ["status"], "Active")}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/banners/${record.formId}/edit`}
-                        className="p-2 hover:bg-gold/10 hover:text-gold text-forest/40 rounded transition-all"
-                      >
-                        <span className="material-symbols-outlined">
-                          edit_square
-                        </span>
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteRecord(record.formId)}
-                        className="p-2 hover:bg-rose-500/10 hover:text-rose-500 text-forest/40 rounded transition-all"
-                      >
-                        <span className="material-symbols-outlined">
-                          delete
-                        </span>
-                      </button>
-                    </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <p className="text-charcoal/60 font-medium">
+                      Loading banners...
+                    </p>
                   </td>
                 </tr>
-              ))}
-
-              {banners.map((banner) => (
-                <tr
-                  key={banner.id}
-                  className="hover:bg-cream/50 transition-colors"
-                >
-                  <td className="px-6 py-5">
-                    <div
-                      className="h-16 w-16 rounded-lg bg-cover bg-center border border-forest/10 shadow-sm"
-                      style={{ backgroundImage: `url('${banner.image}')` }}
-                    />
-                  </td>
-                  <td className="px-6 py-5">
-                    <h4 className="font-bold text-forest">{banner.title}</h4>
-                    <div className="flex gap-4 mt-1">
-                      <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          link
-                        </span>
-                        {banner.link}
-                      </span>
-                      <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">
-                          aspect_ratio
-                        </span>
-                        {banner.size}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${banner.statusClass}`}
-                    >
-                      {banner.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/banners/${banner.id}/edit`}
-                        className="p-2 hover:bg-gold/10 hover:text-gold text-forest/40 rounded transition-all"
-                      >
-                        <span className="material-symbols-outlined">
-                          edit_square
-                        </span>
-                      </Link>
-                      <button className="p-2 hover:bg-red-50 hover:text-red-500 text-forest/40 rounded transition-all">
-                        <span className="material-symbols-outlined">
-                          delete
-                        </span>
-                      </button>
-                    </div>
+              ) : banners.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <p className="text-charcoal/60 font-medium">
+                      No banners found
+                    </p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                banners.map((banner) => (
+                  <tr
+                    key={banner.id}
+                    className="hover:bg-cream/50 transition-colors"
+                  >
+                    <td className="px-6 py-5">
+                      <div
+                        className="h-16 w-16 rounded-lg bg-cover bg-center border border-forest/10 shadow-sm"
+                        style={{ backgroundImage: `url('${banner.imageUrl}')` }}
+                      />
+                    </td>
+                    <td className="px-6 py-5">
+                      <h4 className="font-bold text-forest">{banner.name}</h4>
+                      <div className="flex gap-4 mt-1">
+                        <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">
+                            link
+                          </span>
+                          {banner.id}
+                        </span>
+                        <span className="text-xs font-medium text-charcoal/60 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">
+                            calendar_today
+                          </span>
+                          {new Date(banner.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
+                          banner.status === "active"
+                            ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                            : "bg-charcoal/10 text-charcoal/60 border-charcoal/10"
+                        }`}
+                      >
+                        {banner.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/banners/${banner.id}/edit`}
+                          className="p-2 hover:bg-gold/10 hover:text-gold text-forest/40 rounded transition-all"
+                        >
+                          <span className="material-symbols-outlined">
+                            edit_square
+                          </span>
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteBanner(banner.id)}
+                          disabled={deletingId === banner.id}
+                          className="p-2 hover:bg-rose-500/10 hover:text-rose-500 text-forest/40 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="material-symbols-outlined">
+                            {deletingId === banner.id
+                              ? "hourglass_empty"
+                              : "delete"}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
 
           <div className="px-6 py-4 bg-cream/30 border-t border-forest/5 flex items-center justify-between">
             <p className="text-sm text-charcoal/50">
-              Showing <span className="font-bold text-charcoal">1-3</span> of{" "}
-              <span className="font-bold text-charcoal">24</span> banners
+              Showing{" "}
+              <span className="font-bold text-charcoal">{banners.length}</span>{" "}
+              of <span className="font-bold text-charcoal">{totalBanners}</span>{" "}
+              banners
             </p>
             <div className="flex items-center gap-2">
               <button

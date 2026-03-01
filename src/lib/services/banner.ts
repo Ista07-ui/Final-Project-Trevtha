@@ -4,11 +4,9 @@ import apiClient from "../api";
 // Types untuk Banner
 export interface Banner {
   id: string;
-  title: string;
-  description: string;
+  name: string;
   imageUrl: string;
-  destinationId?: string;
-  status: "active" | "inactive";
+  status?: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
 }
@@ -88,6 +86,57 @@ export const bannerService = {
         getApiErrorMessage(error),
       );
       return [];
+    }
+  },
+
+  // Create banner
+  createBanner: async (data: {
+    name: string;
+    imageUrl: string;
+  }): Promise<Banner | null> => {
+    try {
+      const response = await apiClient.post<BannerDetailResponse>(
+        "/create-banner",
+        data,
+      );
+      console.log("✅ Banner created successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to create banner:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Update banner
+  updateBanner: async (
+    id: string,
+    data: {
+      name: string;
+      imageUrl: string;
+    },
+  ): Promise<Banner | null> => {
+    try {
+      const response = await apiClient.post<BannerDetailResponse>(
+        `/update-banner/${id}`,
+        data,
+      );
+      console.log("✅ Banner updated successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to update banner:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Delete banner
+  deleteBanner: async (id: string): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/delete-banner/${id}`);
+      console.log("✅ Banner deleted successfully");
+      return true;
+    } catch (error: unknown) {
+      console.error("❌ Failed to delete banner:", getApiErrorMessage(error));
+      return false;
     }
   },
 };

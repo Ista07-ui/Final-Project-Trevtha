@@ -16,15 +16,7 @@ export default function LoginPage() {
           </div>
 
           <div className="relative z-10 max-w-lg text-center">
-            <div className="mb-12 flex justify-center">
-              <Image
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxGIUx0ZRbVyj37BEC15PxoLJkzmWO7BoWqWAJ10sjpeMMKvqhj1qGxhIUdg8XtCcYKolw7ADSWVdg2kQ-f47cmsofqoZ4RsjjtQPJowixKvi3RUagIOH1iT1Ja-lbUS8mDZJrdU57rBlS6_bwcsTpW9zyRqyp6F6RZr8hVXlGe66RRdU9bMC0Ugzd6ozzgv6NJxfuc2ouSe8roTqNLt1engQT9528lSTAYuleciiR3AaqHKzEBIkD9EtO8vCgSrsFC-tg5_dPI5rN"
-                alt="TREVTHA Logo"
-                width={220}
-                height={64}
-                className="h-16 w-auto"
-              />
-            </div>
+            <div className="mb-12 flex justify-center"></div>
 
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-cream">
               The Global Marketplace for Extraordinary Travel

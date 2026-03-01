@@ -171,6 +171,79 @@ export const activityService = {
       return [];
     }
   },
+
+  // Create activity
+  createActivity: async (data: {
+    categoryId: string;
+    title: string;
+    description: string;
+    imageUrls: string[];
+    price: number;
+    price_discount?: number;
+    rating?: number;
+    total_reviews?: number;
+    facilities?: string;
+    address: string;
+    province: string;
+    city: string;
+    location_maps?: string;
+  }): Promise<Activity | null> => {
+    try {
+      const response = await apiClient.post<ActivityDetailResponse>(
+        "/create-activity",
+        data,
+      );
+      console.log("✅ Activity created successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to create activity:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Update activity
+  updateActivity: async (
+    id: string,
+    data: {
+      categoryId: string;
+      title: string;
+      description: string;
+      imageUrls: string[];
+      price: number;
+      price_discount?: number;
+      rating?: number;
+      total_reviews?: number;
+      facilities?: string;
+      address: string;
+      province: string;
+      city: string;
+      location_maps?: string;
+    },
+  ): Promise<Activity | null> => {
+    try {
+      const response = await apiClient.post<ActivityDetailResponse>(
+        `/update-activity/${id}`,
+        data,
+      );
+      console.log("✅ Activity updated successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to update activity:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Delete activity
+  deleteActivity: async (id: string): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/delete-activity/${id}`);
+      console.log("✅ Activity deleted successfully");
+      return true;
+    } catch (error: unknown) {
+      console.error("❌ Failed to delete activity:", getApiErrorMessage(error));
+      return false;
+    }
+  },
 };
 
 export default activityService;

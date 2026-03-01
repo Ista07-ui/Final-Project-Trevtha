@@ -2,101 +2,150 @@
 
 import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
-import { useState } from "react";
-import {
-  deleteStoredAdminRecord,
-  getStoredValue,
-  useStoredAdminRecords,
-} from "@/hooks/admin/useStoredAdminRecords";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/useToast";
+import activityService from "@/lib/services/activity";
+import { ToastContainer } from "@/components/Toast";
 
-const activities = [
-  {
-    id: "01",
-    name: "Nusa Penida Snorkeling",
-    code: "ACT-8821",
-    category: "Water Activity",
-    categoryClass: "bg-blue-100 text-blue-700",
-    price: "$85.00",
-    oldPrice: "$120.00",
-    location: "Bali, Indonesia",
-    rating: "4.9",
-    reviews: "128",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDlrO9NuW7xWY8ZTSeZbaVs5W3uY5Bi1xcLGTxTotxCPhRidwjKaSvkJ6EO939bJ331aM2ZvbxRFPeZQiQQrs9kA8v2JHeJXxP5mL59cjuq7JKwKhVNelK9bnbiqWQ9TeyeR5LwWLM3XvF6elQhZmtkPXvakitKRDrzY4GdojcTOotKza60zD-xuy_GsZ-_IhmV9s2IRSuL-WQUJ5zTKyzGdfC9xPFs7EUwbRaMXue-1Ds5aRimLDERgi7IKRrT22gE6oT1dbiifWaB",
-  },
-  {
-    id: "02",
-    name: "Mount Batur Sunrise Trek",
-    code: "ACT-9012",
-    category: "Mountain Trekking",
-    categoryClass: "bg-emerald-100 text-emerald-700",
-    price: "$55.00",
-    oldPrice: "$75.00",
-    location: "Kintamani, Bali",
-    rating: "4.8",
-    reviews: "342",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBHNw01L4bJyj0SaUzu4ffTi5gNEHG4zskdWWXFdMRxoci16bGhGFlVRuwvhiB0uY7HQUTCzlXFDSBPW7a4l9EknECXINFVxyxenv49u7yiESgx5s9UQP1t3KFmbfMHdS0hBCiY5IK6-kiA_ibNVJE_RNXed5eR0z0s4sY9YqP7qgLbj_poY_5YoL06YZrvMBk_I_yeSWJx2XGsJSTpqHxFHsPrR1jxukj5d2y-JTpvHSy_xY61wDAHrKKGBuSoKdAlE_nD48-AYH62",
-  },
-  {
-    id: "03",
-    name: "Private Villa Wine Tasting",
-    code: "ACT-1102",
-    category: "Luxury Tour",
-    categoryClass: "bg-amber-100 text-amber-700",
-    price: "$210.00",
-    oldPrice: "$250.00",
-    location: "Seminyak, Bali",
-    rating: "5.0",
-    reviews: "56",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDlcsVbfo39QJlV3SWASKQJ8NG5zIDShQMyqKeLei7nAXRL3GnqLkDIqWFwsj34Sg2LUDxNgyXGVyBKI_K4Yr0-YgYYSK9EoR6jMk0xD__2zY8yl_46qKEZCOSx50veo7kM3hnDnjaA7FHl1NxTvP704PMQ6m0QYgxRgqRm52fs26y5Hlumi9WAFS7EpAx7mqfrm4X34rlSf9PdwQlO4b6hG4NmnDetD1rKsAlXSXYpIEjkaaiwGFrlYfY6BE3eju6lxAgM9nQdzAPL",
-  },
-  {
-    id: "04",
-    name: "Ubud Traditional Cooking",
-    code: "ACT-4491",
-    category: "Culinary Experience",
-    categoryClass: "bg-purple-100 text-purple-700",
-    price: "$42.00",
-    oldPrice: "$50.00",
-    location: "Ubud, Bali",
-    rating: "4.7",
-    reviews: "210",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuASQcR_5u3I9ljPSbwEtXxEQBOiDRscJVE2G2UtUDORW_YuXZehyxYW_b--bH1ePcVYOiw601iKUFDjY_A9_cInQPut8lBMHrBdsIXGuTIFqD7JBNcuQcNrzRZBmrcg_lypTIgEFYhRHww9gv7lNcj_11WN0M26hOGjPn4dVBhzDj7HOY8A8VKmToRbJXgqbfWLe62F_8RQd7zTy4fBFJp39UFvpH9mZtZ2H4yDE5mYHi0wgLuA0q4sf2r1nYDS_ZodtEwHVnqSRTqz",
-  },
-];
+interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  imageUrls: string[];
+  categoryId: string;
+  price: number;
+  price_discount?: number;
+  rating?: number;
+  total_reviews?: number;
+  facilities?: string;
+  address: string;
+  province: string;
+  city: string;
+  location_maps?: string;
+}
 
-export default function ManageActivitiesPage() {
-  const [deleteKey, setDeleteKey] = useState(0);
-  const storedRecords = useStoredAdminRecords("activities");
+export default function ActivitiesPage() {
+  const toast = useToast();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDeleteRecord = (formId: string) => {
-    deleteStoredAdminRecord("activities", formId);
-    setDeleteKey((prev) => prev + 1);
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setIsLoading(true);
+      const data = await activityService.getActiveActivities(1, 50);
+      setActivities(Array.isArray(data) ? data : []);
+      setIsLoading(false);
+    };
+
+    fetchActivities();
+  }, []);
+
+  const handleDeleteActivity = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this activity?")) {
+      return;
+    }
+
+    setDeletingId(id);
+    const result = await activityService.deleteActivity(id);
+
+    if (result) {
+      setActivities(activities.filter((activity) => activity.id !== id));
+      toast.success("Activity deleted successfully!");
+    } else {
+      toast.error("Failed to delete activity");
+    }
+
+    setDeletingId(null);
   };
+
+  const totalActivities = activities.length;
+  const activeActivities = activities.filter(
+    (activity) => activity.price > 0,
+  ).length;
 
   return (
     <AdminShell activeNav="activities">
-      <div className="p-8">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-4 items-center justify-between mb-6">
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <div className="relative flex-1 min-w-[280px]">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                search
+      <ToastContainer toasts={toast.toasts} onRemove={toast.removeToast} />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-forest">
+            Activities & Experiences
+          </h1>
+          <p className="text-slate-600 mt-2">
+            Manage all tourism activities and travel packages
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-medium">
+                  Total Activities
+                </p>
+                <p className="text-3xl font-bold text-forest mt-2">
+                  {totalActivities}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-gold text-4xl">
+                local_activity
               </span>
-              <input
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                placeholder="Search by activity name or location..."
-                type="text"
-              />
             </div>
-            <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg py-2 pl-3 pr-8">
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-medium">
+                  Active Activities
+                </p>
+                <p className="text-3xl font-bold text-gold mt-2">
+                  {activeActivities}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-emerald-500 text-4xl">
+                check_circle
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-medium">
+                  Average Rating
+                </p>
+                <p className="text-3xl font-bold text-amber-500 mt-2">
+                  {activities.length > 0
+                    ? (
+                        activities.reduce(
+                          (sum, act) => sum + (act.rating || 0),
+                          0,
+                        ) / activities.length
+                      ).toFixed(1)
+                    : "0"}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-amber-500 text-4xl">
+                star
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search activities..."
+              className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-gold"
+            />
+            <select className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 focus:outline-none focus:border-gold">
               <option>All Categories</option>
-            </select>
-            <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg py-2 pl-3 pr-8">
-              <option>Sort by: Newest</option>
+              <option>Water Activity</option>
+              <option>Mountain Trekking</option>
+              <option>Luxury Tour</option>
             </select>
           </div>
           <Link
@@ -109,207 +158,132 @@ export default function ManageActivitiesPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    No
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Activity
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Category
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Price
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Location
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Rating
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {storedRecords.map((record, index) => (
-                  <tr
-                    key={`stored-${record.id}`}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-slate-400 font-medium">
-                      N{index + 1}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-lg bg-slate-100 shadow-sm flex items-center justify-center text-[10px] font-bold text-slate-500">
-                          New
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-charcoal">
-                            {getStoredValue(record.values, ["activity_name"])}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            ID: {record.formId}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase bg-blue-100 text-blue-700">
-                        {getStoredValue(
-                          record.values,
-                          ["category"],
-                          "Uncategorized",
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-charcoal">
-                        {getStoredValue(record.values, ["price"], "-")}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <span className="material-symbols-outlined text-sm">
-                          location_on
-                        </span>
-                        <span className="text-sm">
-                          {getStoredValue(record.values, ["location"], "-")}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-gold">
-                        <span className="material-symbols-outlined text-sm">
-                          star
-                        </span>
-                        <span className="text-sm font-bold text-charcoal">
-                          -
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={`/admin/activities/${record.formId}/edit`}
-                          className="p-2 text-slate-400 hover:text-forest hover:bg-slate-100 rounded-lg"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">
-                            edit_square
-                          </span>
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteRecord(record.formId)}
-                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">
-                            delete
-                          </span>
-                        </button>
-                      </div>
-                    </td>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gold"></div>
+                <p className="mt-4 text-slate-600">Loading activities...</p>
+              </div>
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <span className="material-symbols-outlined text-4xl text-slate-300">
+                  deployed_code
+                </span>
+                <p className="mt-4 text-slate-600">
+                  No activities found. Create your first one!
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
+                      No
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
+                      Activity
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
+                      Price
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
+                      Rating
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-
-                {activities.map((activity) => (
-                  <tr
-                    key={activity.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-slate-400 font-medium">
-                      {activity.id}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="size-12 rounded-lg bg-cover bg-center shadow-sm"
-                          style={{
-                            backgroundImage: `url('${activity.image}')`,
-                          }}
-                        />
-                        <div>
-                          <p className="text-sm font-bold text-charcoal">
-                            {activity.name}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            ID: {activity.code}
-                          </p>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {activities.map((activity, index) => (
+                    <tr
+                      key={activity.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 text-sm text-slate-400 font-medium">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={
+                              Array.isArray(activity.imageUrls) &&
+                              activity.imageUrls.length > 0
+                                ? activity.imageUrls[0]
+                                : "https://via.placeholder.com/48"
+                            }
+                            alt={activity.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {activity.title}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {activity.description?.substring(0, 30)}...
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${activity.categoryClass}`}
-                      >
-                        {activity.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-charcoal">
-                        {activity.price}
-                      </p>
-                      <p className="text-xs text-slate-400 line-through">
-                        {activity.oldPrice}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <span className="material-symbols-outlined text-sm">
-                          location_on
-                        </span>
-                        <span className="text-sm">{activity.location}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-gold">
-                        <span className="material-symbols-outlined text-sm">
-                          star
-                        </span>
-                        <span className="text-sm font-bold text-charcoal">
-                          {activity.rating}
-                        </span>
-                        <span className="text-xs text-slate-400 ml-1">
-                          ({activity.reviews} reviews)
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <button className="p-2 text-slate-400 hover:text-gold hover:bg-slate-100 rounded-lg">
-                          <span className="material-symbols-outlined text-[20px]">
-                            visibility
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {activity.city}, {activity.province}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-forest">
+                        IDR {activity.price?.toLocaleString("id-ID") || "0"}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-amber-500 text-base">
+                            star
                           </span>
-                        </button>
-                        <Link
-                          href={`/admin/activities/${activity.id}/edit`}
-                          className="p-2 text-slate-400 hover:text-forest hover:bg-slate-100 rounded-lg"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">
-                            edit_square
+                          <span className="font-medium text-slate-900">
+                            {activity.rating || "0"}
                           </span>
-                        </Link>
-                        <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded-lg">
-                          <span className="material-symbols-outlined text-[20px]">
-                            delete
+                          <span className="text-xs text-slate-500">
+                            ({activity.total_reviews || 0})
                           </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/admin/activities/${activity.id}/edit`}
+                            className="p-2 text-slate-500 hover:text-gold hover:bg-slate-100 rounded-lg transition-all"
+                          >
+                            <span className="material-symbols-outlined">
+                              edit
+                            </span>
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteActivity(activity.id)}
+                            disabled={deletingId === activity.id}
+                            className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined">
+                              {deletingId === activity.id
+                                ? "hourglass_empty"
+                                : "delete"}
+                            </span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
             <p className="text-xs text-slate-500 font-medium">
-              Showing 4 of 24 active experiences
+              Showing {activities.length} of {totalActivities} activities
             </p>
             <div className="flex items-center gap-2">
               <button className="p-2 text-slate-400" disabled>
@@ -317,16 +291,6 @@ export default function ManageActivitiesPage() {
               </button>
               <button className="w-8 h-8 rounded-lg bg-gold text-forest font-bold text-sm shadow-sm">
                 1
-              </button>
-              <button className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 font-medium text-sm">
-                2
-              </button>
-              <button className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 font-medium text-sm">
-                3
-              </button>
-              <span className="text-slate-300">...</span>
-              <button className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 font-medium text-sm">
-                6
               </button>
               <button className="p-2 text-slate-400 hover:text-forest">
                 <span className="material-symbols-outlined">chevron_right</span>

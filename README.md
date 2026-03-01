@@ -1,36 +1,166 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 TREVTHA - Travel Journal Web Application
 
-## Getting Started
+**A modern travel booking and activity discovery platform built with Next.js, React, and Tailwind CSS.**
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black?style=flat-square&logo=next.js)
+![React](https://img.shields.io/badge/React-19.2.3-blue?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-blue?style=flat-square&logo=tailwind-css)
+
+---
+
+## 📋 Project Overview
+
+**TREVTHA** is a comprehensive travel and tourism platform that allows users to:
+
+- 🔍 **Discover** exciting travel destinations and activities
+- 🛒 **Book** travel packages and tours
+- 💳 **Manage** payment methods and transactions
+- 🎫 **Track** bookings and travel history
+- 👤 **Manage** personal profile and preferences
+- 🎁 **Apply** promotional codes and special deals
+- 📱 **Access** mobile-friendly responsive design
+
+Admin features include:
+
+- 📊 Dashboard analytics
+- 🏷️ Category management
+- 🎯 Activity/Package management
+- 💰 Payment method configuration
+- 📢 Banner and promotional management
+- 👥 User management
+- 💵 Transaction monitoring
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ or higher
+- npm package manager
+
+### Installation
+
+1. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+2. **Setup environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. **Run development server**
+
+   ```bash
+   npm run dev
+   ```
+
+4. **Open in browser**: http://localhost:3000
+
+---
+
+## 📝 Available Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev     # Start development server
+npm run build   # Build for production
+npm start       # Start production server
+npm run lint    # Run ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Technology Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 16.1.6** - React framework
+- **React 19.2.3** - UI library
+- **TypeScript 5** - Type safety
+- **Tailwind CSS 4** - Styling
+- **Axios 1.13.6** - HTTP client
+- **ESLint 9** - Code quality
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🔌 API & Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Base API URL**: `https://travel-journal-api-bootcamp.do.dibimbing.id`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Implemented Endpoints
 
-## Deploy on Vercel
+✅ Authentication (Login/Register)
+✅ User Management
+✅ Categories
+✅ Activities/Tours
+✅ Banners
+✅ Promotions
+✅ Payment Methods
+✅ Cart Management
+✅ Transactions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### User Features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+✅ Browse destinations & activities
+✅ Search & filter by category
+✅ Add to cart & checkout
+✅ Track bookings
+✅ Manage profile
+✅ Apply promo codes
+
+### Admin Features
+
+✅ Dashboard
+✅ Activity management
+✅ Category management
+✅ Promotional management
+✅ Payment configuration
+✅ User management
+✅ Transaction monitoring
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── app/              # Pages (Home, Auth, Admin, User)
+├── components/       # Reusable components
+├── hooks/            # Custom React hooks
+├── lib/
+│   ├── api.ts        # Axios configuration
+│   └── services/     # API services (auth, activity, etc)
+└── globals.css       # Global styles
+```
+
+---
+
+## 🏗️ Architecture
+
+- **Clean Code**: Clear naming & structure
+- **Separation of Concerns**: Components, services, hooks
+- **TypeScript**: Type-safe codebase
+- **Responsive Design**: Mobile & desktop optimized
+- **API Integration**: Comprehensive service layer
+
+---
+
+## 🌐 Deployment
+
+Deploy to Vercel (recommended):
+
+1. Push to GitHub
+2. Connect to Vercel
+3. Set environment variables
+4. Auto-deploy on push
+
+---
+
+## 📄 License
+
+Educational project for Dibimbing Bootcamp
+
+**Created**: January 2026 | **Updated**: March 2026

@@ -92,6 +92,57 @@ export const categoryService = {
       return [];
     }
   },
+
+  // Create category
+  createCategory: async (data: {
+    name: string;
+    imageUrl: string;
+  }): Promise<Category | null> => {
+    try {
+      const response = await apiClient.post<CategoryDetailResponse>(
+        "/create-category",
+        data,
+      );
+      console.log("✅ Category created successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to create category:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Update category
+  updateCategory: async (
+    id: string,
+    data: {
+      name: string;
+      imageUrl: string;
+    },
+  ): Promise<Category | null> => {
+    try {
+      const response = await apiClient.post<CategoryDetailResponse>(
+        `/update-category/${id}`,
+        data,
+      );
+      console.log("✅ Category updated successfully:", response.data.data.id);
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error("❌ Failed to update category:", getApiErrorMessage(error));
+      return null;
+    }
+  },
+
+  // Delete category
+  deleteCategory: async (id: string): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/delete-category/${id}`);
+      console.log("✅ Category deleted successfully");
+      return true;
+    } catch (error: unknown) {
+      console.error("❌ Failed to delete category:", getApiErrorMessage(error));
+      return false;
+    }
+  },
 };
 
 export default categoryService;

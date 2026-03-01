@@ -78,7 +78,7 @@ export default function AboutPage() {
             </h1>
             <p className="text-xl text-white/90 mb-8 font-light leading-relaxed">
               At TREVTHA, we believe that luxury travel is about creating
-              unforgettable experiences, not just booking hotels. Since 2018, we
+              unforgettable experiences, not just booking hotels. Since 2026, we
               have been curating the world is most exclusive adventures for
               discerning travelers.
             </p>

@@ -2,54 +2,172 @@
 
 import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
-import { useState } from "react";
-import {
-  deleteStoredAdminRecord,
-  getStoredValue,
-  useStoredAdminRecords,
-} from "@/hooks/admin/useStoredAdminRecords";
-
-const categories = [
-  {
-    id: 1,
-    name: "Beach",
-    count: "12 Activities",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDwb_LtgTg7IvUJI3Hcpem9eUgJfxxz_eszR5O0o7O4u6jO9Hvc-CStYL8CRaBhMPpYaGXOrdYZZcZByQjE1UBnmnXhF6ecoC4OC2l6cV_OzTDIADlJwFkM__yCANzPo5KofbXPfia2AZoq47iBNML_eUDSDFz7i7ah6FtyHAX8eOPDO1v-1TLmH7Vvd0SeW3INu2_0o0n7LNR6SlEoGdxhDzdEV1A0e-kYT7um-3-42CcVSNiNNau52S1rbSIQztlfmuSrkpt8SWTa",
-  },
-  {
-    id: 2,
-    name: "Mountain",
-    count: "8 Activities",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC1N2BGpHgKsJ6KVoHGvsggVNaEhu-r3tZ-V8zxbZFUQYvCz9pVc2LUqaMPcXmcU8SA6rCQAz1Dsc1L24LuABcEV8MQPnkmUkxHjOp4cvXIvvHxr8zfPPEyYJHAhzHUsS-MCKjBzCoKV-HFNsroj5Ye5mpTtX-VkMsAPXRGH15PEOYf9qRZLubfYMg7bRmO2Xyfy3QExFuLyDUPAbTmPdNGe6clWVUujP_0tdOAiH0IILa9G1yeWT4eBNQBKVCUkkofde63N3--QFwP",
-  },
-  {
-    id: 3,
-    name: "Cultural",
-    count: "15 Activities",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBbSuts63WH0VETBQl2P61e4MMFRnjZKaFQGjuE2_TBqg0XljpItg9t3nKn9YQTEtR76cAOlY6VpjtKF23UkM9t20IMVUeo8yhbdmOe9ZB2mzGq_plED_pDHw0xSMkZIDPyxM0f4xDV7LcDPk90ZkqX3hf7XpPK_YSEHm2tuIZjfc2DOGbxwrRe59lJ7eR1biVT_2LhEHGTPBGmMV4eGZoOba_Jhspx80rHczKbv2OGMkUx4opvIvCO5Hm2h9ZihiDSw8HRT3TUOADv",
-  },
-  {
-    id: 4,
-    name: "City Tour",
-    count: "10 Activities",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuA2mFZzNcejE4KSZ_0oSL0n1qruXE6wSjF1ZQcG4hXB59mJO2QdzILLMzWwZak_peMoCZshFNJwrrV9Uri8OFKOvVkoNpI6I0OkrYkIhaHaQTKpnVPqnu7vLKsgwfMtAtUmmc2LAQBPa4zgoRL42-Z0Uo6Ln8aU5GX5RwyIum5aA7xke1bWxKLc8nmHllm9Ce8VpHNzy0cZ-YnLUHIB9a2GvHD5hOHHJJe5cB78lufTdnzlkdlmnjKYk2-Z33_qOkoX1TTImz8FRZhW",
-  },
-];
+import { useEffect, useState } from "react";
+import { categoryService, Category } from "@/lib/services/category";
+import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/Toast";
 
 export default function ManageCategoriesPage() {
-  const [deleteKey, setDeleteKey] = useState(0);
-  const storedRecords = useStoredAdminRecords("categories");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const toast = useToast();
 
-  const handleDeleteRecord = (formId: string) => {
-    deleteStoredAdminRecord("categories", formId);
-    setDeleteKey((prev) => prev + 1);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoading(true);
+        const data = await categoryService.getAllCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        toast.error("Failed to load categories");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+
+    setDeletingId(id);
+    try {
+      const success = await categoryService.deleteCategory(id);
+      if (success) {
+        setCategories((prev) => prev.filter((cat) => cat.id !== id));
+        toast.success("Category deleted successfully");
+      } else {
+        toast.error("Failed to delete category");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("An error occurred");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
+    <AdminShell activeNav="categories">
+      <ToastContainer toasts={toast.toasts} onRemove={toast.removeToast} />
+      <div className="flex-1 overflow-auto p-8">
+        <div className="bg-white rounded-xl shadow-sm border border-forest/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-forest/10 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-forest">
+              Category Management
+            </h3>
+            <Link
+              href="/admin/categories/new"
+              className="bg-gold hover:bg-gold/90 text-forest px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">add</span>Add
+              New Category
+            </Link>
+          </div>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-forest/[0.02] border-b border-forest/10">
+                <th className="px-6 py-4 text-xs font-bold text-forest uppercase tracking-wider w-16 text-center">
+                  No
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-forest uppercase tracking-wider">
+                  Category Name
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-forest uppercase tracking-wider">
+                  Image
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-forest uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-forest uppercase tracking-wider text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-forest/5">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <p className="text-charcoal/60 font-medium">
+                      Loading categories...
+                    </p>
+                  </td>
+                </tr>
+              ) : categories.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <p className="text-charcoal/60 font-medium">
+                      No categories found
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                categories.map((category, index) => (
+                  <tr
+                    key={category.id}
+                    className="hover:bg-cream/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm text-charcoal/70 text-center font-medium">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-forest">
+                      {category.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div
+                        className="h-12 w-12 rounded-lg bg-cover bg-center border border-forest/10"
+                        style={{
+                          backgroundImage: `url('${category.imageUrl}')`,
+                        }}
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          category.status === "active"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-charcoal/10 text-charcoal/60"
+                        }`}
+                      >
+                        {category.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/categories/${category.id}/edit`}
+                          className="p-2 hover:bg-gold/10 hover:text-gold text-forest/40 rounded transition-all"
+                        >
+                          <span className="material-symbols-outlined text-lg">
+                            edit_square
+                          </span>
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteCategory(category.id)}
+                          disabled={deletingId === category.id}
+                          className="p-2 hover:bg-rose-500/10 hover:text-rose-500 text-forest/40 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="material-symbols-outlined text-lg">
+                            {deletingId === category.id
+                              ? "hourglass_empty"
+                              : "delete"}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
     <AdminShell activeNav="categories">
       <div className="flex-1 overflow-auto p-8">
         <div className="bg-white rounded-xl shadow-sm border border-forest/10 overflow-hidden">
