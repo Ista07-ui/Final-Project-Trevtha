@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { bannerService, type Banner } from "@/lib/services/banner";
+import { bannerService } from "@/lib/services/banner";
+
+type SeasonalBanner = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  description?: string;
+  status?: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+};
 
 export default function SeasonalDeals() {
-  const [banners, setBanners] = useState<Banner[]>([]);
+  const [banners, setBanners] = useState<SeasonalBanner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,10 +41,10 @@ export default function SeasonalDeals() {
   }, []);
 
   // Default banners fallback
-  const getDefaultBanners = (): Banner[] => [
+  const getDefaultBanners = (): SeasonalBanner[] => [
     {
       id: "1",
-      title: "Amalfi Coast",
+      name: "Amalfi Coast",
       description: "Starting from $1,299",
       imageUrl:
         "https://lh3.googleusercontent.com/aida-public/AB6AXuDexww3XmtpTVzKqwRfwb-FSsYCU5yWYcwPA4AYGQJoE33uVIVqy9UJx9zS7t6MxwzBI6FBXTNlvtHfu0KfuVi2dYHzqGfwpFypk5g7rTcBb2mcN9xRMaBFu1KHbBzjMbrw1JEvRBkiShw72S96MUR4rw2jFBAoZjpKfZOd_NnKbkZHswZJdNW3t-DNiJshP6sSTTJ-1lCbOC6lZS231vK7uq4--hzcVHWJx3ycBEjxslwukEAjhfqJeDepRu_0kkXXr4NGu9xGVryj",
@@ -44,7 +54,7 @@ export default function SeasonalDeals() {
     },
     {
       id: "2",
-      title: "Swiss Alps Retreat",
+      name: "Swiss Alps Retreat",
       description: "Starting from $2,450",
       imageUrl:
         "https://lh3.googleusercontent.com/aida-public/AB6AXuCBFle4JTmaiOBxceuMXcm6QLKM4gWvQ2hvt6y9bR19cbUq_qIYknBWhbmOmr33WMt27zK31Fn7diM3_HUUjbnB32n7VugpbtIOb3AcwkLmqlt1YuUCKjfuwSJXsf6YTS4MhFZIPjfUz-z5VFX1mhvls0eoBSGBHSuu9rp29Ej69IZN8msvUfNvb87s1njTAadKRIRD3VOFeunSIWjvkfbhoqnB8eI32DDZM_yiYq_lBc1BuDgakl85nRQwqDv-VLFV-uPmi2TtBx76",
@@ -54,7 +64,7 @@ export default function SeasonalDeals() {
     },
     {
       id: "3",
-      title: "Tokyo Metro Experience",
+      name: "Tokyo Metro Experience",
       description: "Starting from $980",
       imageUrl:
         "https://lh3.googleusercontent.com/aida-public/AB6AXuD5mia5vnVY8Xt-_lJeLNn25DzU43Umd3ttwI9rmaECf65WqyTONdHfEHPIsIpIRJ50jt6x-4zFkn22fvkiN7_1bz_PEkCNGbSSMO-QpMpLcf0BMFc5X3RcpeFGv44rk_ptvT0587hpCcinYoVALwqaD0f-rDlgXJsY7MJKNZOi5FBy2BtQm8F5oMeqc_WbZqxB_qM8LET_OX43OAPH22zvFIdVBwlcXDwnumHTTycgqQo9FIiwlCi6VWc90JEM_goP6l6eQj1pzf2U",
@@ -110,10 +120,10 @@ export default function SeasonalDeals() {
               <div className="absolute inset-0 bg-linear-to-t from-forest/90 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
                 <h3 className="text-white text-2xl font-bold mb-1">
-                  {banner.title}
+                  {banner.name}
                 </h3>
                 <p className="text-cream/80 text-sm">
-                  {banner.description}
+                  {banner.description ?? "Limited-time travel offer"}
                 </p>
               </div>
             </div>

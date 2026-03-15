@@ -4,13 +4,12 @@ import apiClient from "../api";
 // Types untuk Payment Methods
 export interface PaymentCard {
   id: string;
-  cardType: "visa" | "mastercard" | "amex" | "discover";
-  cardNumber: string; // Last 4 digits only
-  expiryDate: string; // MM/YY format
-  cardholderName?: string;
-  isDefault: boolean;
-  logo?: string;
-  status: "active" | "inactive";
+  name: string;
+  virtual_account_number?: string;
+  virtual_account_name?: string;
+  imageUrl?: string;
+  isDefault?: boolean;
+  status?: "active" | "inactive";
   createdAt?: string;
   updatedAt?: string;
 }
@@ -40,7 +39,7 @@ export interface PaymentCardResponse {
   code: string;
   status: string;
   message: string;
-  data: PaymentCard;
+  data?: PaymentCard;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -85,17 +84,15 @@ export const paymentService = {
     request: AddPaymentCardRequest,
   ): Promise<PaymentCard | null> => {
     try {
-      const response = await apiClient.post<PaymentCardResponse>(
-        "/payment-methods",
-        request,
-      );
+      await apiClient.post("/generate-payment-methods", request);
+      const refreshed = await paymentService.getAllPaymentMethods();
+      const latest = refreshed.at(0) ?? null;
       console.log(
-        "✅ Payment method added:",
-        response.data.data.cardType,
-        "ending in",
-        response.data.data.cardNumber,
+        "✅ Payment methods generated/refreshed:",
+        refreshed.length,
+        "items",
       );
-      return response.data.data;
+      return latest;
     } catch (error: unknown) {
       console.error(
         "❌ Failed to add payment method:",
@@ -111,12 +108,12 @@ export const paymentService = {
     request: UpdatePaymentCardRequest,
   ): Promise<PaymentCard | null> => {
     try {
-      const response = await apiClient.put<PaymentCardResponse>(
-        `/payment-methods/${cardId}`,
-        request,
-      );
-      console.log("✅ Payment method updated:", response.data.data.cardNumber);
-      return response.data.data;
+      await apiClient.post("/generate-payment-methods", {
+        cardId,
+        ...request,
+      });
+      const refreshed = await paymentService.getAllPaymentMethods();
+      return refreshed.find((method) => method.id === cardId) ?? null;
     } catch (error: unknown) {
       console.error(
         "❌ Failed to update payment method:",
@@ -131,15 +128,13 @@ export const paymentService = {
     cardId: string,
   ): Promise<PaymentCard | null> => {
     try {
-      const response = await apiClient.put<PaymentCardResponse>(
-        `/payment-methods/${cardId}`,
-        { isDefault: true },
-      );
-      console.log(
-        "✅ Default payment method set:",
-        response.data.data.cardNumber,
-      );
-      return response.data.data;
+      await apiClient.post("/generate-payment-methods", {
+        cardId,
+        isDefault: true,
+      });
+      console.log("✅ Default payment method set/refreshed");
+      const refreshed = await paymentService.getAllPaymentMethods();
+      return refreshed.find((method) => method.id === cardId) ?? null;
     } catch (error: unknown) {
       console.error(
         "❌ Failed to set default payment method:",
@@ -152,8 +147,8 @@ export const paymentService = {
   // Delete payment method
   deletePaymentMethod: async (cardId: string): Promise<boolean> => {
     try {
-      await apiClient.delete(`/payment-methods/${cardId}`);
-      console.log("✅ Payment method deleted:", cardId);
+      await apiClient.post("/generate-payment-methods", { cardId });
+      console.log("✅ Payment methods refreshed after delete request:", cardId);
       return true;
     } catch (error: unknown) {
       console.error(
@@ -167,12 +162,16 @@ export const paymentService = {
   // Get default payment method
   getDefaultPaymentMethod: async (): Promise<PaymentCard | null> => {
     try {
-      const response = await apiClient.get<PaymentCardResponse>(
-        "/payment-methods/default",
-      );
+      const methods = await paymentService.getAllPaymentMethods();
+      const response = {
+        data: {
+          data:
+            methods.find((method) => method.isDefault) ?? methods.at(0) ?? null,
+        },
+      };
       console.log(
         "✅ Default payment method fetched:",
-        response.data.data.cardNumber,
+        response.data.data?.virtual_account_number,
       );
       return response.data.data;
     } catch (error: unknown) {

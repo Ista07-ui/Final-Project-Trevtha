@@ -17,11 +17,11 @@ export interface CartItem {
 
 export interface AddToCartRequest {
   activityId: string;
-  quantity: number;
-  pricePerPerson: number;
-  title: string;
-  location: string;
-  imageUrl: string;
+  quantity?: number;
+  pricePerPerson?: number;
+  title?: string;
+  location?: string;
+  imageUrl?: string;
 }
 
 export interface UpdateCartRequest {
@@ -32,15 +32,71 @@ export interface CartResponse {
   code: string;
   status: string;
   message: string;
-  data: CartItem[];
+  data: CartApiItem[];
 }
 
 export interface CartItemResponse {
   code: string;
   status: string;
   message: string;
-  data: CartItem;
+  data?: CartApiItem;
 }
+
+type CartApiItem = {
+  id: string;
+  activityId?: string;
+  quantity?: number;
+  activity?: {
+    title?: string;
+    imageUrls?: string[];
+    price?: number;
+    price_discount?: number;
+    address?: string;
+    city?: string;
+    province?: string;
+  };
+};
+
+const buildActivityLocation = (activity: CartApiItem["activity"]): string => {
+  if (!activity) {
+    return "-";
+  }
+
+  const cityProvince = [activity.city, activity.province]
+    .filter(Boolean)
+    .join(", ");
+
+  return cityProvince || activity.address || "-";
+};
+
+const getEffectivePrice = (activity: CartApiItem["activity"]): number => {
+  const fullPrice = activity?.price ?? 0;
+  const discountedPrice = activity?.price_discount ?? 0;
+
+  if (discountedPrice > 0 && discountedPrice < fullPrice) {
+    return discountedPrice;
+  }
+
+  return fullPrice;
+};
+
+const normalizeCartItem = (item: CartApiItem): CartItem => {
+  const quantity = item.quantity ?? 1;
+  const pricePerPerson = getEffectivePrice(item.activity);
+
+  return {
+    id: item.id,
+    activityId: item.activityId,
+    title: item.activity?.title || "Untitled Activity",
+    location: buildActivityLocation(item.activity),
+    pricePerPerson,
+    quantity,
+    subtotal: pricePerPerson * quantity,
+    imageUrl:
+      item.activity?.imageUrls?.[0] ||
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+  };
+};
 
 const getApiErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
@@ -63,12 +119,13 @@ export const cartService = {
   getCart: async (): Promise<CartItem[]> => {
     try {
       const response = await apiClient.get<CartResponse>("/carts");
+      const normalized = response.data.data.map(normalizeCartItem);
       console.log(
         "✅ Cart fetched successfully:",
-        response.data.data.length,
+        normalized.length,
         "items",
       );
-      return response.data.data;
+      return normalized;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch cart:", getApiErrorMessage(error));
       return [];
@@ -79,11 +136,26 @@ export const cartService = {
   addToCart: async (request: AddToCartRequest): Promise<CartItem | null> => {
     try {
       const response = await apiClient.post<CartItemResponse>(
-        "/carts",
-        request,
+        "/add-cart",
+        {
+          activityId: request.activityId,
+          ...(request.quantity ? { quantity: request.quantity } : {}),
+        },
       );
-      console.log("✅ Item added to cart:", response.data.data.title);
-      return response.data.data;
+
+      if (response.data.data) {
+        const normalized = normalizeCartItem(response.data.data);
+        console.log("✅ Item added to cart:", normalized.title);
+        return normalized;
+      }
+
+      const refreshedItems = await cartService.getCart();
+      const lastItem =
+        refreshedItems.find((item) => item.activityId === request.activityId) ||
+        refreshedItems.at(-1) ||
+        null;
+      console.log("✅ Item added to cart and refreshed");
+      return lastItem;
     } catch (error: unknown) {
       console.error("❌ Failed to add to cart:", getApiErrorMessage(error));
       return null;
@@ -96,19 +168,23 @@ export const cartService = {
     quantity: number,
   ): Promise<CartItem | null> => {
     try {
-      const response = await apiClient.put<CartItemResponse>(
-        `/carts/${cartItemId}`,
+      const response = await apiClient.post<CartItemResponse>(
+        `/update-cart/${cartItemId}`,
         {
           quantity,
         },
       );
-      console.log(
-        "✅ Cart item updated:",
-        response.data.data.title,
-        "Qty:",
-        quantity,
-      );
-      return response.data.data;
+
+      if (response.data.data) {
+        const normalized = normalizeCartItem(response.data.data);
+        console.log("✅ Cart item updated:", normalized.title, "Qty:", quantity);
+        return normalized;
+      }
+
+      const refreshedItems = await cartService.getCart();
+      const updatedItem = refreshedItems.find((item) => item.id === cartItemId) || null;
+      console.log("✅ Cart item updated and refreshed. Qty:", quantity);
+      return updatedItem;
     } catch (error: unknown) {
       console.error(
         "❌ Failed to update cart item:",
@@ -121,7 +197,7 @@ export const cartService = {
   // Remove item dari cart
   removeFromCart: async (cartItemId: string): Promise<boolean> => {
     try {
-      await apiClient.delete(`/carts/${cartItemId}`);
+      await apiClient.delete(`/delete-cart/${cartItemId}`);
       console.log("✅ Item removed from cart:", cartItemId);
       return true;
     } catch (error: unknown) {
@@ -136,7 +212,10 @@ export const cartService = {
   // Clear all cart items
   clearCart: async (): Promise<boolean> => {
     try {
-      await apiClient.delete("/carts");
+      const items = await cartService.getCart();
+      await Promise.all(
+        items.map((item) => apiClient.delete(`/delete-cart/${item.id}`)),
+      );
       console.log("✅ Cart cleared successfully");
       return true;
     } catch (error: unknown) {

@@ -4,25 +4,8 @@ import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/useToast";
-import activityService from "@/lib/services/activity";
+import activityService, { type Activity } from "@/lib/services/activity";
 import { ToastContainer } from "@/components/Toast";
-
-interface Activity {
-  id: string;
-  title: string;
-  description: string;
-  imageUrls: string[];
-  categoryId: string;
-  price: number;
-  price_discount?: number;
-  rating?: number;
-  total_reviews?: number;
-  facilities?: string;
-  address: string;
-  province: string;
-  city: string;
-  location_maps?: string;
-}
 
 export default function ActivitiesPage() {
   const toast = useToast();
@@ -214,10 +197,8 @@ export default function ActivitiesPage() {
                         <div className="flex items-center gap-4">
                           <img
                             src={
-                              Array.isArray(activity.imageUrls) &&
-                              activity.imageUrls.length > 0
-                                ? activity.imageUrls[0]
-                                : "https://via.placeholder.com/48"
+                              activity.imageUrl ||
+                              "https://via.placeholder.com/48"
                             }
                             alt={activity.title}
                             className="w-12 h-12 rounded-lg object-cover"
@@ -246,9 +227,7 @@ export default function ActivitiesPage() {
                           <span className="font-medium text-slate-900">
                             {activity.rating || "0"}
                           </span>
-                          <span className="text-xs text-slate-500">
-                            ({activity.total_reviews || 0})
-                          </span>
+                          <span className="text-xs text-slate-500">(0)</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">

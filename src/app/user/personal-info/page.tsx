@@ -16,6 +16,15 @@ type UserProfile = {
   memberSince: string;
 };
 
+type AuthStorageUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+  profilePictureUrl?: string;
+  phoneNumber?: string;
+};
+
 const defaultProfile: UserProfile = {
   fullName: "Alexander V. Trevane",
   username: "alextrevane_lux",
@@ -28,22 +37,79 @@ const defaultProfile: UserProfile = {
   memberSince: "January 2026",
 };
 
+const createMemberSinceText = () => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+};
+
+const mergeProfileWithAuthUser = (
+  profile: UserProfile,
+  authUser: AuthStorageUser | null,
+): UserProfile => {
+  if (!authUser) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    fullName: authUser.name || profile.fullName,
+    email: authUser.email || profile.email,
+    phone: authUser.phoneNumber || profile.phone,
+    username:
+      profile.username && profile.username.trim().length > 0
+        ? profile.username
+        : authUser.email?.split("@")[0] || profile.username,
+    memberSince: profile.memberSince || createMemberSinceText(),
+  };
+};
+
+const readAuthUser = (): AuthStorageUser | null => {
+  try {
+    const raw = localStorage.getItem("trevtha_user");
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as AuthStorageUser;
+  } catch {
+    return null;
+  }
+};
+
 export default function PersonalInfoPage() {
   const [profile, setProfile] = useState<UserProfile>(() => {
     try {
+      const authUser = readAuthUser();
       const stored = localStorage.getItem("trevtha_user_profile");
       if (stored) {
-        return JSON.parse(stored);
+        return mergeProfileWithAuthUser(JSON.parse(stored), authUser);
       }
+
+      return mergeProfileWithAuthUser(defaultProfile, authUser);
     } catch {
       // Return default on error
     }
-    return defaultProfile;
+    return mergeProfileWithAuthUser(defaultProfile, readAuthUser());
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSaveChanges = () => {
     localStorage.setItem("trevtha_user_profile", JSON.stringify(profile));
+
+    const authUser = readAuthUser();
+    if (authUser) {
+      localStorage.setItem(
+        "trevtha_user",
+        JSON.stringify({
+          ...authUser,
+          name: profile.fullName,
+          email: profile.email,
+          phoneNumber: profile.phone,
+        }),
+      );
+    }
+
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };

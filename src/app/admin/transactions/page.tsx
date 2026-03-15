@@ -2,12 +2,17 @@
 
 import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   deleteStoredAdminRecord,
   getStoredValue,
   useStoredAdminRecords,
 } from "@/hooks/admin/useStoredAdminRecords";
+import transactionService, {
+  type Transaction,
+} from "@/lib/services/transaction";
+import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/Toast";
 
 const transactions = [
   {
@@ -67,6 +72,26 @@ const transactions = [
 export default function ManageTransactionsPage() {
   const [deleteKey, setDeleteKey] = useState(0);
   const storedRecords = useStoredAdminRecords("transactions");
+  const [apiTransactions, setApiTransactions] = useState<Transaction[]>([]);
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setIsLoadingApi(true);
+      const result = await transactionService.getTransactions(1, 50);
+
+      if (result.success && Array.isArray(result.data)) {
+        setApiTransactions(result.data);
+      } else {
+        toast.error(result.message || "Failed to load transactions");
+      }
+
+      setIsLoadingApi(false);
+    };
+
+    fetchTransactions();
+  }, []);
 
   const handleDeleteRecord = (formId: string) => {
     deleteStoredAdminRecord("transactions", formId);
@@ -75,6 +100,7 @@ export default function ManageTransactionsPage() {
 
   return (
     <AdminShell activeNav="transactions">
+      <ToastContainer toasts={toast.toasts} onRemove={toast.removeToast} />
       <div className="p-8">
         <div className="flex justify-between items-start mb-10">
           <div>
@@ -171,6 +197,88 @@ export default function ManageTransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-charcoal/5">
+                {apiTransactions.map((transaction) => {
+                  const status = transaction.status ?? "pending";
+                  const statusColorClass =
+                    status === "success"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                      : status === "pending"
+                        ? "bg-amber-50 text-amber-700 border-amber-100"
+                        : status === "cancelled"
+                          ? "bg-gray-100 text-gray-700 border-gray-200"
+                          : "bg-red-50 text-red-700 border-red-100";
+
+                  return (
+                    <tr
+                      key={`api-${transaction.id}`}
+                      className="hover:bg-cream/30 transition-colors"
+                    >
+                      <td className="px-6 py-4 text-sm font-bold text-charcoal">
+                        {transaction.invoiceId || transaction.id}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-forest/10 flex items-center justify-center text-forest font-bold text-xs">
+                            U
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-charcoal">
+                              {transaction.userId}
+                            </span>
+                            <span className="text-[10px] text-charcoal/40">
+                              -
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-charcoal/80">
+                        {transaction.transaction_items?.[0]?.title || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-charcoal">
+                        IDR{" "}
+                        {Number(transaction.totalAmount || 0).toLocaleString(
+                          "id-ID",
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm text-charcoal/60">
+                            payments
+                          </span>
+                          <span className="text-xs text-charcoal/80">
+                            {transaction.payment_method?.name ||
+                              transaction.paymentMethodId}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-charcoal/60 font-medium">
+                        {new Date(
+                          transaction.orderDate || transaction.createdAt,
+                        ).toLocaleDateString("id-ID")}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColorClass}`}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2">
+                          <Link
+                            href={`/admin/transactions/${transaction.id}/edit`}
+                            className="p-1.5 text-charcoal/40 hover:text-gold"
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              visibility
+                            </span>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
                 {storedRecords.map((record, index) => (
                   <tr
                     key={`stored-${record.id}`}
@@ -325,6 +433,17 @@ export default function ManageTransactionsPage() {
                     </td>
                   </tr>
                 ))}
+
+                {isLoadingApi ? (
+                  <tr>
+                    <td
+                      className="px-6 py-6 text-sm text-charcoal/60"
+                      colSpan={8}
+                    >
+                      Loading API transactions...
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
 import { useToast } from "@/hooks/useToast";
 import { bannerService } from "@/lib/services/banner";
-import { categoryService } from "@/lib/services/category";
+import { categoryService, type Category } from "@/lib/services/category";
 import activityService from "@/lib/services/activity";
 import promoService from "@/lib/services/promo";
 import {
@@ -52,6 +52,20 @@ const toFieldKey = (label: string) =>
     .split("/")
     .join("_");
 
+const firstNonEmpty = (values: Record<string, string>, keys: string[]) => {
+  for (const key of keys) {
+    const value = values[key]?.trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+};
+
+const formatCategoryOption = (category: Category) =>
+  `${category.id} | ${category.name}`;
+
 export default function AdminCrudForm({
   activeNav,
   title,
@@ -94,6 +108,7 @@ export default function AdminCrudForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "saved" | "failed">("idle");
   const [isLoading, setIsLoading] = useState(false);
+  const [activityCategories, setActivityCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     if (mode !== "edit") {
@@ -119,11 +134,55 @@ export default function AdminCrudForm({
     }));
   }, [initialValues, mode, section, formId]);
 
+  useEffect(() => {
+    if (section !== "activities") {
+      return;
+    }
+
+    const loadCategories = async () => {
+      const categories = await categoryService.getAllCategories();
+      setActivityCategories(categories);
+
+      if (categories.length === 0) {
+        return;
+      }
+
+      setValues((prev) => {
+        const currentValue = prev["category"]?.trim();
+        if (currentValue && currentValue.includes("|")) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          category: formatCategoryOption(categories[0]),
+        };
+      });
+    };
+
+    void loadCategories();
+  }, [section]);
+
   const updateValue = (fieldKey: string, fieldValue: string) => {
     setValues((prev) => ({
       ...prev,
       [fieldKey]: fieldValue,
     }));
+
+    // Clear stale per-field errors as soon as user edits the input.
+    setErrors((prev) => {
+      if (!prev[fieldKey]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
+
+    if (status !== "idle") {
+      setStatus("idle");
+    }
   };
 
   const submitForm = async () => {
@@ -150,9 +209,12 @@ export default function AdminCrudForm({
     try {
       // Handle Banner API
       if (section === "banners") {
+        const bannerName = firstNonEmpty(values, ["name", "banner_title"]);
+        const bannerImageUrl = firstNonEmpty(values, ["image_url"]);
+
         const bannerData = {
-          name: values["name"] || "",
-          imageUrl: values["image_url"] || "",
+          name: bannerName,
+          imageUrl: bannerImageUrl,
         };
 
         if (mode === "new") {
@@ -191,9 +253,15 @@ export default function AdminCrudForm({
 
       // Handle Category API
       if (section === "categories") {
+        const categoryName = firstNonEmpty(values, ["name", "category_name"]);
+        const categoryImageUrl = firstNonEmpty(values, [
+          "image_url",
+          "display_image_url",
+        ]);
+
         const categoryData = {
-          name: values["name"] || "",
-          imageUrl: values["image_url"] || "",
+          name: categoryName,
+          imageUrl: categoryImageUrl,
         };
 
         if (mode === "new") {
@@ -235,21 +303,35 @@ export default function AdminCrudForm({
 
       // Handle Activity API
       if (section === "activities") {
+        const categoryValue = firstNonEmpty(values, ["category_id", "category"]);
+        const activityCategoryId = categoryValue.includes("|")
+          ? categoryValue.split("|")[0].trim()
+          : categoryValue;
+        const activityTitle = firstNonEmpty(values, ["title", "activity_name"]);
+        const activityDescription = firstNonEmpty(values, [
+          "description",
+          "activity_description",
+        ]);
+        const activityImageInput = firstNonEmpty(values, ["image_urls", "image_url"]);
+        const activityAddress = firstNonEmpty(values, ["address", "location"]);
+        const activityProvince = firstNonEmpty(values, ["province", "location"]);
+        const activityCity = firstNonEmpty(values, ["city", "location"]);
+
         const activityData = {
-          categoryId: values["category_id"] || "",
-          title: values["title"] || "",
-          description: values["description"] || "",
-          imageUrls: values["image_urls"]
-            ? values["image_urls"].split(",").map((url) => url.trim())
+          categoryId: activityCategoryId,
+          title: activityTitle,
+          description: activityDescription,
+          imageUrls: activityImageInput
+            ? activityImageInput.split(",").map((url) => url.trim())
             : [],
-          price: parseFloat(values["price"] || "0"),
+          price: Number.parseFloat(values["price"] || "0"),
           price_discount: values["price_discount"]
-            ? parseFloat(values["price_discount"])
+            ? Number.parseFloat(values["price_discount"])
             : undefined,
           facilities: values["facilities"] || undefined,
-          address: values["address"] || "",
-          province: values["province"] || "",
-          city: values["city"] || "",
+          address: activityAddress,
+          province: activityProvince,
+          city: activityCity,
           location_maps: values["location_maps"] || undefined,
         };
 
@@ -292,16 +374,32 @@ export default function AdminCrudForm({
 
       // Handle Promo API
       if (section === "promos") {
+        const promoTitle = firstNonEmpty(values, ["title", "promo_title", "promo_code"]);
+        const promoDescription = firstNonEmpty(values, [
+          "description",
+          "promo_notes",
+        ]);
+        const promoImageUrl = firstNonEmpty(values, ["image_url"]);
+        const promoTerms = firstNonEmpty(values, [
+          "terms_condition",
+          "promo_notes",
+        ]);
+        const promoCode = firstNonEmpty(values, ["promo_code"]);
+
         const promoData = {
-          title: values["title"] || "",
-          description: values["description"] || "",
-          imageUrl: values["image_url"] || "",
-          terms_condition: values["terms_condition"] || "",
-          promo_code: values["promo_code"] || "",
-          promo_discount_price: parseFloat(
-            values["promo_discount_price"] || "0",
+          title: promoTitle,
+          description: promoDescription,
+          imageUrl: promoImageUrl,
+          terms_condition: promoTerms,
+          promo_code: promoCode,
+          promo_discount_price: Number.parseFloat(
+            firstNonEmpty(values, ["promo_discount_price", "discount_value"]) ||
+              "0",
           ),
-          minimum_claim_price: parseFloat(values["minimum_claim_price"] || "0"),
+          minimum_claim_price: Number.parseFloat(
+            firstNonEmpty(values, ["minimum_claim_price", "minimum_purchase"]) ||
+              "0",
+          ),
         };
 
         if (mode === "new") {
@@ -368,6 +466,30 @@ export default function AdminCrudForm({
   const renderInputField = (field: Field, key: string, value: string) => {
     const commonClass =
       "w-full rounded-lg border border-forest/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40";
+
+    if (
+      section === "activities" &&
+      key === "category" &&
+      activityCategories.length > 0
+    ) {
+      return (
+        <select
+          value={value}
+          onChange={(event) => updateValue(key, event.target.value)}
+          className={`${commonClass} bg-white`}
+        >
+          {activityCategories.map((category) => {
+            const option = formatCategoryOption(category);
+
+            return (
+              <option key={category.id} value={option}>
+                {category.name}
+              </option>
+            );
+          })}
+        </select>
+      );
+    }
 
     if (field.options) {
       return (
@@ -479,7 +601,7 @@ export default function AdminCrudForm({
                     <span className="material-symbols-outlined animate-spin text-lg">
                       progress_activity
                     </span>
-                    Loading...
+                    <span>Loading...</span>
                   </>
                 ) : (
                   saveLabel

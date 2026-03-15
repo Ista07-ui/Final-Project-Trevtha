@@ -22,7 +22,7 @@ export interface BannerDetailResponse {
   code: string;
   status: string;
   message: string;
-  data: Banner;
+  data?: Banner;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -59,10 +59,10 @@ export const bannerService = {
   getBannerById: async (id: string): Promise<Banner | null> => {
     try {
       const response = await apiClient.get<BannerDetailResponse>(
-        `/banners/${id}`,
+        `/banner/${id}`,
       );
       console.log("✅ Banner fetched successfully:", response.data.data);
-      return response.data.data;
+      return response.data.data ?? null;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch banner:", getApiErrorMessage(error));
       return null;
@@ -99,8 +99,18 @@ export const bannerService = {
         "/create-banner",
         data,
       );
-      console.log("✅ Banner created successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Banner created successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedBanners = await bannerService.getAllBanners();
+      const createdBanner =
+        refreshedBanners.find((banner) => banner.name === data.name) ?? null;
+
+      console.log("✅ Banner created successfully:", response.data.message);
+      return createdBanner;
     } catch (error: unknown) {
       console.error("❌ Failed to create banner:", getApiErrorMessage(error));
       return null;
@@ -120,8 +130,15 @@ export const bannerService = {
         `/update-banner/${id}`,
         data,
       );
-      console.log("✅ Banner updated successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Banner updated successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedBanner = await bannerService.getBannerById(id);
+      console.log("✅ Banner updated successfully:", response.data.message);
+      return refreshedBanner;
     } catch (error: unknown) {
       console.error("❌ Failed to update banner:", getApiErrorMessage(error));
       return null;

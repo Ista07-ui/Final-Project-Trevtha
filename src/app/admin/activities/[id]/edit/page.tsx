@@ -10,22 +10,33 @@ export default function EditActivityPage() {
       saveLabel="Update Activity"
       fields={[
         { label: "Activity Name", placeholder: "Mount Batur Sunrise Trek" },
-        {
-          label: "Category",
-          options: [
-            "Water Activity",
-            "Mountain Trekking",
-            "Luxury Tour",
-            "Culinary Experience",
-          ],
-        },
-        { label: "Price", placeholder: "$55.00" },
-        { label: "Location", placeholder: "Kintamani, Bali" },
+        { label: "Category" },
+        { label: "Price", type: "number", placeholder: "550000" },
+        { label: "Address", placeholder: "Jl. Raya Kintamani" },
+        { label: "Province", placeholder: "Bali" },
+        { label: "City", placeholder: "Bangli" },
         { label: "Image URL", placeholder: "https://..." },
         {
           label: "Activity Description",
           textarea: true,
           placeholder: "Update activity description",
+        },
+        {
+          label: "Facilities",
+          textarea: true,
+          placeholder: "Guide, breakfast, transport",
+          required: false,
+        },
+        {
+          label: "Google Maps URL",
+          placeholder: "https://maps.google.com/...",
+          required: false,
+        },
+        {
+          label: "Price Discount",
+          type: "number",
+          placeholder: "75000",
+          required: false,
         },
       ]}
     />

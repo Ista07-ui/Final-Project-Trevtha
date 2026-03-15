@@ -24,7 +24,7 @@ export interface CategoryDetailResponse {
   code: string;
   status: string;
   message: string;
-  data: Category;
+  data?: Category;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -63,10 +63,10 @@ export const categoryService = {
   getCategoryById: async (id: string): Promise<Category | null> => {
     try {
       const response = await apiClient.get<CategoryDetailResponse>(
-        `/categories/${id}`,
+        `/category/${id}`,
       );
       console.log("✅ Category fetched successfully:", response.data.data);
-      return response.data.data;
+      return response.data.data ?? null;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch category:", getApiErrorMessage(error));
       return null;
@@ -103,8 +103,22 @@ export const categoryService = {
         "/create-category",
         data,
       );
-      console.log("✅ Category created successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log(
+          "✅ Category created successfully:",
+          response.data.data.id,
+        );
+        return response.data.data;
+      }
+
+      const refreshedCategories = await categoryService.getAllCategories();
+      const createdCategory =
+        refreshedCategories.find((category) => category.name === data.name) ??
+        null;
+
+      console.log("✅ Category created successfully:", response.data.message);
+      return createdCategory;
     } catch (error: unknown) {
       console.error("❌ Failed to create category:", getApiErrorMessage(error));
       return null;
@@ -124,8 +138,18 @@ export const categoryService = {
         `/update-category/${id}`,
         data,
       );
-      console.log("✅ Category updated successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log(
+          "✅ Category updated successfully:",
+          response.data.data.id,
+        );
+        return response.data.data;
+      }
+
+      const refreshedCategory = await categoryService.getCategoryById(id);
+      console.log("✅ Category updated successfully:", response.data.message);
+      return refreshedCategory;
     } catch (error: unknown) {
       console.error("❌ Failed to update category:", getApiErrorMessage(error));
       return null;

@@ -3,40 +3,20 @@
 import UserDashboardHeader from "@/components/user/UserDashboardHeader";
 import { useEffect, useState } from "react";
 import { cartService, type CartItem } from "@/lib/services/cart";
+import paymentService from "@/lib/services/payment";
+import transactionService from "@/lib/services/transaction";
+import activityService, { type Activity } from "@/lib/services/activity";
 
 export default function MyCartPage() {
-  const defaultCartItems: CartItem[] = [
-    {
-      id: "1",
-      title: "Bali Private Villa",
-      location: "Uluwatu, Indonesia • 5 Nights",
-      pricePerPerson: 2500.0,
-      quantity: 2,
-      subtotal: 5000.0,
-      imageUrl:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCKyGdtCp_8aBaG13yK1PtenlCtnhabooOb2cvbwB03jCtXJ8ZKqO2EVeaxR4J3iC8UHwzRo7ssbcg_j9svrPWDRMl2Ins1AeJ49f141PWDNVcX0dxavPDf65oR3Mcj94Z65tg75Ja1iGWK8r8hkMjdUpYUUrkAS05yFv-w4q4aMMFQzslRLxqe7ufonaD1HmV5OdZ4cdbo-wy0SzF4Qb4MQWNKzP0_9WxZGN03_jLZD9tF43OHwLYropYpJ4aK-8jqPz4Fo6QgIxnr",
-    },
-    {
-      id: "2",
-      title: "Tokyo City Tour",
-      location: "Guided VIP Culinary Experience",
-      pricePerPerson: 450.0,
-      quantity: 2,
-      subtotal: 900.0,
-      imageUrl:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuDKEca-7PKlsL2U9e2yeepWQScYy6QS6TZrIDDchgOrlFW7CKtG46ES5rul6pjpOwVj25JvBHC3AXLaOO7INwG341PpkaUO3Sv-D7PVhKQL5J0Ery8W5wkinYqVOzV2aIokz0Umd_ncoTj93q3giiGz8JTffv9pgI3SdPAqe8MuyHM8hg0R1EYtyiDV4UY1gKmMiEQU_EXoAAWSRcZik-tPZ97gWD8KnR4LIdl2QpOcJ4N7bZ1a-jL9_rPjGqGp3tzufHt9ip1toMWl",
-    },
-  ];
-  const [cartItems, setCartItems] = useState<CartItem[]>(defaultCartItems);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [addForm, setAddForm] = useState({
-    title: "",
-    location: "",
-    pricePerPerson: 0,
+    activityId: "",
     quantity: 1,
-    imageUrl: "",
   });
 
   // Fetch cart from API on mount
@@ -44,13 +24,26 @@ export default function MyCartPage() {
     const fetchCart = async () => {
       try {
         setIsLoading(true);
-        const data = await cartService.getCart();
-        setCartItems(data.length > 0 ? data : defaultCartItems);
+        const [cartData, activityData] = await Promise.all([
+          cartService.getCart(),
+          activityService.getAllActivities(1, 50),
+        ]);
+
+        setCartItems(cartData);
+        setActivities(activityData);
+
+        if (activityData.length > 0) {
+          setAddForm((prev) => ({
+            ...prev,
+            activityId: prev.activityId || activityData[0].id,
+          }));
+        }
+
         setError(null);
       } catch (err) {
         console.error("Error fetching cart:", err);
         setError("Failed to load cart");
-        setCartItems(defaultCartItems);
+        setCartItems([]);
       } finally {
         setIsLoading(false);
       }
@@ -61,30 +54,32 @@ export default function MyCartPage() {
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!addForm.title || addForm.pricePerPerson <= 0 || addForm.quantity <= 0)
+    if (!addForm.activityId || addForm.quantity <= 0)
       return;
 
     try {
       setIsLoading(true);
       const newItem = await cartService.addToCart({
-        activityId: "manual",
+        activityId: addForm.activityId,
         quantity: addForm.quantity,
-        pricePerPerson: addForm.pricePerPerson,
-        title: addForm.title,
-        location: addForm.location,
-        imageUrl: addForm.imageUrl,
       });
 
       if (newItem) {
-        setCartItems((prev) => [...prev, newItem]);
+        setCartItems((prev) => {
+          const existing = prev.find((item) => item.id === newItem.id);
+          if (existing) {
+            return prev.map((item) => (item.id === newItem.id ? newItem : item));
+          }
+
+          return [...prev, newItem];
+        });
         setAddForm({
-          title: "",
-          location: "",
-          pricePerPerson: 0,
+          activityId: addForm.activityId,
           quantity: 1,
-          imageUrl: "",
         });
         setIsAddFormOpen(false);
+      } else {
+        setError("Failed to add item to cart");
       }
     } catch (err) {
       console.error("Error adding to cart:", err);
@@ -141,6 +136,58 @@ export default function MyCartPage() {
   const totalPrice = cartItems
     .reduce((sum, item) => sum + item.subtotal, 0)
     .toFixed(2);
+
+  const handleCheckout = async () => {
+    if (cartItems.length === 0 || isCheckingOut) {
+      return;
+    }
+
+    try {
+      setIsCheckingOut(true);
+      setError(null);
+
+      let paymentMethods = await paymentService.getAllPaymentMethods();
+
+      if (paymentMethods.length === 0) {
+        await paymentService.addPaymentMethod({
+          cardType: "visa",
+          cardNumber: "4111111111111111",
+          expiryDate: "12/30",
+          cardholderName: "Trevtha User",
+          cvv: "123",
+          isDefault: true,
+        });
+        paymentMethods = await paymentService.getAllPaymentMethods();
+      }
+
+      const selectedPaymentMethod = paymentMethods[0];
+
+      if (!selectedPaymentMethod) {
+        setError("No payment method found. Please add a payment method first.");
+        return;
+      }
+
+      const result = await transactionService.createTransaction({
+        cartIds: cartItems.map((item) => item.id),
+        paymentMethodId: selectedPaymentMethod.id,
+      });
+
+      if (!result.success) {
+        setError(result.message || "Failed to create transaction");
+        return;
+      }
+
+      await cartService.clearCart();
+      setCartItems([]);
+      alert("Checkout successful! Your transaction has been created.");
+    } catch (checkoutError) {
+      console.error("Checkout failed:", checkoutError);
+      setError("Checkout failed. Please try again.");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   return (
     <div className="layout-container flex h-full grow flex-col bg-background-light text-charcoal [--color-primary:#1B3022] [--color-forest:#1B3022] [--color-gold:#D4AF37] [--color-background-light:#F9F7F2] [--color-background-dark:#121212]">
       {/* Top Navigation */}
@@ -177,61 +224,37 @@ export default function MyCartPage() {
                   onSubmit={handleAddItem}
                   className="grid grid-cols-1 gap-4 md:grid-cols-2"
                 >
-                  <input
-                    type="text"
-                    value={addForm.title}
+                  <select
+                    value={addForm.activityId}
                     onChange={(e) =>
-                      setAddForm({ ...addForm, title: e.target.value })
+                      setAddForm({ ...addForm, activityId: e.target.value })
                     }
-                    placeholder="Experience Title"
                     className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
                     required
-                  />
-                  <input
-                    type="text"
-                    value={addForm.location}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, location: e.target.value })
-                    }
-                    placeholder="Location & Duration"
-                    className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
-                  />
-                  <input
-                    type="number"
-                    value={addForm.pricePerPerson || ""}
-                    onChange={(e) =>
-                      setAddForm({
-                        ...addForm,
-                        pricePerPerson: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="Price per Person"
-                    className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
-                    step="0.01"
-                    required
-                  />
+                  >
+                    {activities.length === 0 ? (
+                      <option value="">No activities available</option>
+                    ) : (
+                      activities.map((activity) => (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.title}
+                        </option>
+                      ))
+                    )}
+                  </select>
                   <input
                     type="number"
                     value={addForm.quantity || ""}
                     onChange={(e) =>
                       setAddForm({
                         ...addForm,
-                        quantity: parseInt(e.target.value) || 1,
+                        quantity: Number.parseInt(e.target.value, 10) || 1,
                       })
                     }
                     placeholder="Quantity"
                     className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
                     min="1"
                     required
-                  />
-                  <input
-                    type="url"
-                    value={addForm.imageUrl}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, imageUrl: e.target.value })
-                    }
-                    placeholder="Image URL"
-                    className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary md:col-span-2"
                   />
                   <div className="md:col-span-2 flex justify-end gap-3">
                     <button
@@ -243,6 +266,7 @@ export default function MyCartPage() {
                     </button>
                     <button
                       type="submit"
+                      disabled={activities.length === 0}
                       className="rounded-lg bg-forest px-5 py-2.5 text-sm font-bold text-white hover:bg-opacity-90"
                     >
                       Add to Cart
@@ -430,8 +454,14 @@ export default function MyCartPage() {
                   </p>
                 </div>
                 <div className="mt-4 flex flex-col gap-3">
-                  <button className="w-full rounded-xl bg-primary py-4 text-center text-lg font-extrabold text-forest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-                    Proceed to Checkout
+                  <button
+                    onClick={handleCheckout}
+                    disabled={
+                      isCheckingOut || isLoading || cartItems.length === 0
+                    }
+                    className="w-full rounded-xl bg-primary py-4 text-center text-lg font-extrabold text-forest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
                   </button>
                   <div className="flex items-center justify-center gap-2 text-xs text-white/40">
                     <span className="material-symbols-outlined text-sm">

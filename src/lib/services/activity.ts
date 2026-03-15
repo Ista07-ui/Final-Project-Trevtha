@@ -41,7 +41,7 @@ export interface ActivityDetailResponse {
   code: string;
   status: string;
   message: string;
-  data: Activity;
+  data?: Activity;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -89,13 +89,13 @@ export const activityService = {
   getActivityById: async (id: string): Promise<Activity | null> => {
     try {
       const response = await apiClient.get<ActivityDetailResponse>(
-        `/activities/${id}`,
+        `/activity/${id}`,
       );
       console.log(
         "✅ Activity fetched successfully:",
-        response.data.data.title,
+        response.data.data?.title,
       );
-      return response.data.data;
+      return response.data.data ?? null;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch activity:", getApiErrorMessage(error));
       return null;
@@ -193,8 +193,21 @@ export const activityService = {
         "/create-activity",
         data,
       );
-      console.log("✅ Activity created successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Activity created successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedActivities = await activityService.getAllActivities(1, 100);
+      const createdActivity =
+        refreshedActivities.find(
+          (activity) =>
+            activity.title === data.title && activity.city === data.city,
+        ) ?? null;
+
+      console.log("✅ Activity created successfully:", response.data.message);
+      return createdActivity;
     } catch (error: unknown) {
       console.error("❌ Failed to create activity:", getApiErrorMessage(error));
       return null;
@@ -225,8 +238,15 @@ export const activityService = {
         `/update-activity/${id}`,
         data,
       );
-      console.log("✅ Activity updated successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Activity updated successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedActivity = await activityService.getActivityById(id);
+      console.log("✅ Activity updated successfully:", response.data.message);
+      return refreshedActivity;
     } catch (error: unknown) {
       console.error("❌ Failed to update activity:", getApiErrorMessage(error));
       return null;

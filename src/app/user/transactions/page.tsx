@@ -1,32 +1,127 @@
+"use client";
+
 import UserDashboardHeader from "@/components/user/UserDashboardHeader";
+import { useEffect, useMemo, useState } from "react";
+import transactionService, {
+  type Transaction,
+} from "@/lib/services/transaction";
+
+type FilterStatus = "all" | "pending" | "success" | "cancelled" | "failed";
 
 export default function TransactionsPage() {
-  const transactions = [
-    {
-      id: "#TRV-88291",
-      date: "24 May 2026",
-      activityName: "Bali Private Villa Experience",
-      totalPrice: "$2,500.00",
-      status: "Success",
-      statusColor: "green",
-    },
-    {
-      id: "#TRV-88295",
-      date: "26 May 2026",
-      activityName: "Private Jet Charter to Tokyo",
-      totalPrice: "$15,200.00",
-      status: "Pending",
-      statusColor: "yellow",
-    },
-    {
-      id: "#TRV-88280",
-      date: "10 May 2026",
-      activityName: "Safari Glamping in Serengeti",
-      totalPrice: "$4,800.00",
-      status: "Canceled",
-      statusColor: "gray",
-    },
-  ];
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<
+    string | null
+  >(null);
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTransactions = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const result = await transactionService.getMyTransactions();
+
+    if (!result.success || !result.data) {
+      setError(result.message || "Failed to load transactions");
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setTransactions(result.data);
+    setSelectedTransactionId(
+      (current) => current ?? result.data[0]?.id ?? null,
+    );
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const filteredTransactions = useMemo(() => {
+    if (activeFilter === "all") {
+      return transactions;
+    }
+
+    return transactions.filter(
+      (transaction) => transaction.status === activeFilter,
+    );
+  }, [activeFilter, transactions]);
+
+  const selectedTransaction =
+    transactions.find(
+      (transaction) => transaction.id === selectedTransactionId,
+    ) ??
+    filteredTransactions[0] ??
+    null;
+
+  const handleUploadProof = async () => {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    const proofPaymentUrl = window.prompt(
+      "Masukkan URL bukti pembayaran:",
+      selectedTransaction.proofPaymentUrl ||
+        "https://example.com/proof-payment.jpg",
+    );
+
+    if (!proofPaymentUrl) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await transactionService.uploadPaymentProof(
+      selectedTransaction.id,
+      proofPaymentUrl,
+    );
+
+    if (!result.success) {
+      setError(result.message || "Failed to upload payment proof");
+      setIsSubmitting(false);
+      return;
+    }
+
+    await loadTransactions();
+    setIsSubmitting(false);
+  };
+
+  const handleCancelTransaction = async () => {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    const confirmed = window.confirm("Batalkan transaksi ini?");
+    if (!confirmed) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await transactionService.cancelTransaction(
+      selectedTransaction.id,
+    );
+
+    if (!result.success) {
+      setError(result.message || "Failed to cancel transaction");
+      setIsSubmitting(false);
+      return;
+    }
+
+    await loadTransactions();
+    setIsSubmitting(false);
+  };
+
+  const getStatusClass = (status: Transaction["status"]) => {
+    if (status === "success") return "bg-green-100 text-green-700";
+    if (status === "pending")
+      return "bg-primary/20 text-primary border border-primary/20";
+    if (status === "cancelled") return "bg-slate-100 text-slate-500";
+    return "bg-red-100 text-red-600";
+  };
 
   return (
     <div className="layout-container flex h-full grow flex-col bg-background-light text-charcoal [--color-primary:#1B3022] [--color-forest:#1B3022] [--color-gold:#D4AF37] [--color-background-light:#F9F7F2] [--color-background-dark:#121212]">
@@ -45,42 +140,54 @@ export default function TransactionsPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-forest/10 rounded-lg text-sm font-semibold hover:bg-forest hover:text-white transition-all shadow-sm">
-              <span className="material-symbols-outlined text-xl">
-                download
-              </span>
-              Download Report
+            <button
+              onClick={loadTransactions}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-forest/10 rounded-lg text-sm font-semibold hover:bg-forest hover:text-white transition-all shadow-sm"
+            >
+              <span className="material-symbols-outlined text-xl">refresh</span>
+              Refresh Data
             </button>
           </div>
         </header>
 
+        {error ? (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        ) : null}
+
         {/* Filters Section */}
         <section className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-forest/5 flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center bg-background-light p-1 rounded-lg">
-            <button className="px-6 py-2 rounded-md bg-forest text-white text-sm font-bold transition-all">
+            <button
+              onClick={() => setActiveFilter("all")}
+              className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${activeFilter === "all" ? "bg-forest text-white" : "text-charcoal/60 hover:text-forest"}`}
+            >
               All
             </button>
-            <button className="px-6 py-2 rounded-md text-charcoal/60 hover:text-forest text-sm font-semibold transition-all">
+            <button
+              onClick={() => setActiveFilter("pending")}
+              className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${activeFilter === "pending" ? "bg-forest text-white" : "text-charcoal/60 hover:text-forest"}`}
+            >
               Pending
             </button>
-            <button className="px-6 py-2 rounded-md text-charcoal/60 hover:text-forest text-sm font-semibold transition-all">
+            <button
+              onClick={() => setActiveFilter("success")}
+              className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${activeFilter === "success" ? "bg-forest text-white" : "text-charcoal/60 hover:text-forest"}`}
+            >
               Success
             </button>
-            <button className="px-6 py-2 rounded-md text-charcoal/60 hover:text-forest text-sm font-semibold transition-all">
-              Canceled
+            <button
+              onClick={() => setActiveFilter("cancelled")}
+              className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${activeFilter === "cancelled" ? "bg-forest text-white" : "text-charcoal/60 hover:text-forest"}`}
+            >
+              Cancelled
             </button>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-charcoal/40">
-                calendar_month
-              </span>
-              <input
-                className="pl-10 pr-4 py-2 bg-background-light border-none rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary w-64"
-                placeholder="May 2026 - June 2026"
-                type="text"
-              />
-            </div>
+            <p className="text-sm font-medium text-charcoal/50">
+              Total transaksi: {filteredTransactions.length}
+            </p>
           </div>
         </section>
 
@@ -98,43 +205,61 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-forest/5 text-sm">
-              {transactions.map((transaction) => (
-                <tr
-                  key={transaction.id}
-                  className="hover:bg-background-light/50 transition-colors"
-                >
-                  <td className="px-6 py-5 font-bold text-forest">
-                    {transaction.id}
-                  </td>
-                  <td className="px-6 py-5 text-charcoal/70">
-                    {transaction.date}
-                  </td>
-                  <td className="px-6 py-5 font-semibold text-charcoal">
-                    {transaction.activityName}
-                  </td>
-                  <td className="px-6 py-5 font-bold text-forest">
-                    {transaction.totalPrice}
-                  </td>
-                  <td className="px-6 py-5">
-                    <span
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
-                        transaction.statusColor === "green"
-                          ? "bg-green-100 text-green-700"
-                          : transaction.statusColor === "yellow"
-                            ? "bg-primary/20 text-primary-700 border border-primary/20"
-                            : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {transaction.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <button className="text-primary font-bold hover:underline">
-                      View Details
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td
+                    className="px-6 py-8 text-center text-charcoal/60"
+                    colSpan={6}
+                  >
+                    Loading transactions...
                   </td>
                 </tr>
-              ))}
+              ) : filteredTransactions.length === 0 ? (
+                <tr>
+                  <td
+                    className="px-6 py-8 text-center text-charcoal/60"
+                    colSpan={6}
+                  >
+                    Belum ada transaksi.
+                  </td>
+                </tr>
+              ) : (
+                filteredTransactions.map((transaction) => (
+                  <tr
+                    key={transaction.id}
+                    className={`hover:bg-background-light/50 transition-colors cursor-pointer ${selectedTransaction?.id === transaction.id ? "bg-background-light/60" : ""}`}
+                    onClick={() => setSelectedTransactionId(transaction.id)}
+                  >
+                    <td className="px-6 py-5 font-bold text-forest">
+                      {transaction.invoiceId || transaction.id}
+                    </td>
+                    <td className="px-6 py-5 text-charcoal/70">
+                      {new Date(
+                        transaction.orderDate || transaction.createdAt,
+                      ).toLocaleDateString("id-ID")}
+                    </td>
+                    <td className="px-6 py-5 font-semibold text-charcoal">
+                      {transaction.transaction_items?.[0]?.title || "-"}
+                    </td>
+                    <td className="px-6 py-5 font-bold text-forest">
+                      IDR{" "}
+                      {Number(transaction.totalAmount).toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-6 py-5">
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${getStatusClass(transaction.status)}`}
+                      >
+                        {transaction.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <button className="text-primary font-bold hover:underline">
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -149,58 +274,120 @@ export default function TransactionsPage() {
                   Active Selection
                 </span>
                 <h3 className="text-2xl font-bold text-forest mt-1">
-                  Order #TRV-88295 Detail
+                  {selectedTransaction?.invoiceId || "No transaction selected"}
                 </h3>
               </div>
-              <span className="px-4 py-1.5 rounded-full bg-primary/20 text-primary font-bold text-xs uppercase">
-                Pending Payment
+              <span
+                className={`px-4 py-1.5 rounded-full font-bold text-xs uppercase ${selectedTransaction ? getStatusClass(selectedTransaction.status) : "bg-slate-100 text-slate-500"}`}
+              >
+                {selectedTransaction?.status || "No Data"}
               </span>
             </div>
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-sm">
-                <span className="text-charcoal/60 font-medium">Base price</span>
-                <span className="text-charcoal font-bold">$14,500.00</span>
+                <span className="text-charcoal/60 font-medium">Order date</span>
+                <span className="text-charcoal font-bold">
+                  {selectedTransaction
+                    ? new Date(
+                        selectedTransaction.orderDate ||
+                          selectedTransaction.createdAt,
+                      ).toLocaleString("id-ID")
+                    : "-"}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-charcoal/60 font-medium">
-                  Service fee
+                  Expired date
                 </span>
-                <span className="text-charcoal font-bold">$850.00</span>
+                <span className="text-charcoal font-bold">
+                  {selectedTransaction?.expiredDate
+                    ? new Date(selectedTransaction.expiredDate).toLocaleString(
+                        "id-ID",
+                      )
+                    : "-"}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-charcoal/60 font-medium">
-                  Promo discount
+                <span className="text-charcoal/60 font-medium">Items</span>
+                <span className="text-charcoal font-bold">
+                  {selectedTransaction?.transaction_items?.length || 0}
                 </span>
-                <span className="text-red-500 font-bold">-$150.00</span>
               </div>
               <div className="border-t border-forest/5 pt-4 flex justify-between">
                 <span className="text-forest font-extrabold">Total Price</span>
                 <span className="text-xl font-extrabold text-forest">
-                  $15,200.00
+                  {selectedTransaction
+                    ? `IDR ${Number(selectedTransaction.totalAmount).toLocaleString("id-ID")}`
+                    : "-"}
                 </span>
               </div>
             </div>
             <div className="p-4 bg-background-light rounded-lg border border-forest/5 mb-8 flex items-center gap-4">
               <div className="w-12 h-8 bg-forest rounded flex items-center justify-center text-white font-bold text-[10px]">
-                VISA
+                {selectedTransaction?.payment_method?.name
+                  ?.slice(0, 4)
+                  .toUpperCase() || "PAY"}
               </div>
               <div>
                 <p className="text-[11px] font-bold text-charcoal/40 uppercase tracking-wider">
                   Payment Method
                 </p>
                 <p className="text-sm font-bold text-forest">
-                  Visa Gold Corporate •••• 4421
+                  {selectedTransaction?.payment_method?.name || "-"} •{" "}
+                  {selectedTransaction?.payment_method
+                    ?.virtual_account_number ||
+                    selectedTransaction?.paymentMethodId ||
+                    "-"}
                 </p>
               </div>
             </div>
+            <div className="mb-8 rounded-lg border border-forest/10 bg-background-light/70 p-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-charcoal/40">
+                Activities
+              </p>
+              <div className="space-y-3">
+                {selectedTransaction?.transaction_items?.length ? (
+                  selectedTransaction.transaction_items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-4 text-sm"
+                    >
+                      <div>
+                        <p className="font-bold text-forest">{item.title}</p>
+                        <p className="text-charcoal/60">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="font-bold text-charcoal">
+                        IDR {Number(item.price).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-charcoal/60">
+                    Tidak ada detail item.
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
-              <button className="bg-forest text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-forest/90 transition-all text-sm">
+              <button
+                onClick={handleUploadProof}
+                disabled={!selectedTransaction || isSubmitting}
+                className="bg-forest text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-forest/90 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <span className="material-symbols-outlined text-lg">
                   cloud_upload
                 </span>
-                Upload Proof
+                {isSubmitting ? "Processing..." : "Upload Proof"}
               </button>
-              <button className="bg-white border border-red-200 text-red-500 font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-50 transition-all text-sm">
+              <button
+                onClick={handleCancelTransaction}
+                disabled={
+                  !selectedTransaction ||
+                  isSubmitting ||
+                  selectedTransaction?.status !== "pending"
+                }
+                className="bg-white border border-red-200 text-red-500 font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-50 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <span className="material-symbols-outlined text-lg">
                   cancel
                 </span>
@@ -222,10 +409,13 @@ export default function TransactionsPage() {
             ></div>
             <div className="relative z-10">
               <h3 className="text-2xl font-bold text-white mb-2">
-                Bali Private Villa
+                {selectedTransaction?.transaction_items?.[0]?.title ||
+                  "No active booking"}
               </h3>
               <p className="text-primary/80 font-medium mb-6">
-                Booking Confirmed • May 24, 2026
+                {selectedTransaction
+                  ? `${selectedTransaction.status.toUpperCase()} • ${new Date(selectedTransaction.orderDate || selectedTransaction.createdAt).toLocaleDateString("id-ID")}`
+                  : "No transaction selected"}
               </p>
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3 text-white/70">
@@ -233,36 +423,44 @@ export default function TransactionsPage() {
                     groups
                   </span>
                   <span className="text-sm font-medium">
-                    4 Adults, 2 Children
+                    {selectedTransaction?.transaction_items?.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0,
+                    ) || 0}{" "}
+                    Travelers
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-white/70">
                   <span className="material-symbols-outlined text-primary">
-                    flight_takeoff
+                    payments
                   </span>
                   <span className="text-sm font-medium">
-                    Private Airport Pickup Included
+                    {selectedTransaction?.payment_method?.name ||
+                      "Payment method unavailable"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-white/70">
                   <span className="material-symbols-outlined text-primary">
-                    concierge
+                    receipt_long
                   </span>
                   <span className="text-sm font-medium">
-                    24/7 Personal Butler Service
+                    {selectedTransaction?.proofPaymentUrl
+                      ? "Proof uploaded"
+                      : "Waiting for payment proof"}
                   </span>
                 </div>
               </div>
             </div>
             <div className="relative z-10">
-              <button className="w-full bg-primary text-forest font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-black/40">
-                <span className="material-symbols-outlined">
-                  confirmation_number
-                </span>
-                DOWNLOAD E-TICKET
+              <button
+                onClick={loadTransactions}
+                className="w-full bg-primary text-forest font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-black/40"
+              >
+                <span className="material-symbols-outlined">sync</span>
+                REFRESH TRANSACTIONS
               </button>
               <p className="text-center text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] mt-4">
-                Required at Check-in
+                Synced from live API
               </p>
             </div>
           </div>

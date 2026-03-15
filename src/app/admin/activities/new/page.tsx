@@ -10,22 +10,33 @@ export default function NewActivityPage() {
       saveLabel="Save Activity"
       fields={[
         { label: "Activity Name", placeholder: "Nusa Penida Snorkeling" },
-        {
-          label: "Category",
-          options: [
-            "Water Activity",
-            "Mountain Trekking",
-            "Luxury Tour",
-            "Culinary Experience",
-          ],
-        },
-        { label: "Price", placeholder: "$85.00" },
-        { label: "Location", placeholder: "Bali, Indonesia" },
+        { label: "Category" },
+        { label: "Price", type: "number", placeholder: "850000" },
+        { label: "Address", placeholder: "Jl. Pantai Pandawa No. 1" },
+        { label: "Province", placeholder: "Bali" },
+        { label: "City", placeholder: "Badung" },
         { label: "Image URL", placeholder: "https://..." },
         {
           label: "Activity Description",
           textarea: true,
           placeholder: "Describe this activity",
+        },
+        {
+          label: "Facilities",
+          textarea: true,
+          placeholder: "Snorkeling gear, guide, lunch",
+          required: false,
+        },
+        {
+          label: "Google Maps URL",
+          placeholder: "https://maps.google.com/...",
+          required: false,
+        },
+        {
+          label: "Price Discount",
+          type: "number",
+          placeholder: "50000",
+          required: false,
         },
       ]}
     />

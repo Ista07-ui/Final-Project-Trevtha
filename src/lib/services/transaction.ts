@@ -5,29 +5,41 @@ import apiClient from "../api";
 export interface Transaction {
   id: string;
   userId: string;
-  cartId?: string;
   paymentMethodId: string;
-  status: "pending" | "confirmed" | "cancelled" | "completed";
+  invoiceId?: string;
+  status: "pending" | "success" | "failed" | "cancelled";
   totalAmount: number;
-  paymentProof?: string;
-  notes?: string;
-  invoiceNumber?: string;
+  proofPaymentUrl?: string | null;
+  orderDate?: string;
+  expiredDate?: string;
   createdAt: string;
   updatedAt: string;
-  items?: {
+  payment_method?: {
     id: string;
-    activityId: string;
+    name: string;
+    virtual_account_number?: string;
+    virtual_account_name?: string;
+    imageUrl?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
+  transaction_items?: {
+    id: string;
+    transactionId: string;
     title: string;
     quantity: number;
-    pricePerPerson: number;
-    subtotal: number;
+    price: number;
+    price_discount?: number;
+    description?: string;
+    imageUrls?: string[];
+    createdAt?: string;
+    updatedAt?: string;
   }[];
 }
 
 export interface TransactionRequest {
-  cartId?: string;
+  cartIds?: string[];
   paymentMethodId: string;
-  notes?: string;
   proofPaymentUrl?: string;
 }
 
@@ -47,7 +59,7 @@ export interface TransactionDetailResponse {
   code: string;
   status: string;
   message: string;
-  data: Transaction;
+  data?: Transaction;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -69,13 +81,34 @@ export const transactionService = {
    */
   async getTransactions(page: number = 1, limit: number = 10) {
     try {
-      const response = await apiClient.get<TransactionListResponse>(
-        `/transactions?page=${page}&limit=${limit}`,
-      );
+      const response =
+        await apiClient.get<TransactionListResponse>("/all-transactions");
       return {
         success: true,
         data: response.data.data,
         pagination: response.data.pagination,
+        message: response.data.message,
+      };
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      return {
+        success: false,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  /**
+   * Get logged user transactions
+   */
+  async getMyTransactions() {
+    try {
+      const response =
+        await apiClient.get<TransactionListResponse>("/my-transactions");
+      return {
+        success: true,
+        data: response.data.data,
         message: response.data.message,
       };
     } catch (error) {
@@ -94,7 +127,7 @@ export const transactionService = {
   async getTransactionDetail(transactionId: string) {
     try {
       const response = await apiClient.get<TransactionDetailResponse>(
-        `/transactions/${transactionId}`,
+        `/transaction/${transactionId}`,
       );
       return {
         success: true,
@@ -117,12 +150,17 @@ export const transactionService = {
   async createTransaction(payload: TransactionRequest) {
     try {
       const response = await apiClient.post<TransactionDetailResponse>(
-        "/transactions",
+        "/create-transaction",
         payload,
       );
+
+      const latestTransactions =
+        await apiClient.get<TransactionListResponse>("/my-transactions");
+      const latestTransaction = latestTransactions.data.data.at(-1) ?? null;
+
       return {
         success: true,
-        data: response.data.data,
+        data: latestTransaction,
         message: response.data.message,
       };
     } catch (error) {
@@ -143,8 +181,8 @@ export const transactionService = {
     payload: { status?: string; notes?: string },
   ) {
     try {
-      const response = await apiClient.put<TransactionDetailResponse>(
-        `/transactions/${transactionId}`,
+      const response = await apiClient.post<TransactionDetailResponse>(
+        `/update-transaction-status/${transactionId}`,
         payload,
       );
       return {
@@ -165,14 +203,11 @@ export const transactionService = {
   /**
    * Upload payment proof
    */
-  async uploadPaymentProof(transactionId: string, file: File) {
+  async uploadPaymentProof(transactionId: string, proofPaymentUrl: string) {
     try {
-      const formData = new FormData();
-      formData.append("proofPaymentUrl", file);
-
-      const response = await apiClient.put<TransactionDetailResponse>(
-        `/transactions/${transactionId}/proof`,
-        formData,
+      const response = await apiClient.post<TransactionDetailResponse>(
+        `/update-transaction-proof-payment/${transactionId}`,
+        { proofPaymentUrl },
       );
       return {
         success: true,
@@ -194,8 +229,8 @@ export const transactionService = {
    */
   async cancelTransaction(transactionId: string, reason?: string) {
     try {
-      const response = await apiClient.put<TransactionDetailResponse>(
-        `/transactions/${transactionId}/cancel`,
+      const response = await apiClient.post<TransactionDetailResponse>(
+        `/cancel-transaction/${transactionId}`,
         { reason },
       );
       return {

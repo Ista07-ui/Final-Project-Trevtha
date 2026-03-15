@@ -32,7 +32,7 @@ export interface PromoDetailResponse {
   code: string;
   status: string;
   message: string;
-  data: Promo;
+  data?: Promo;
 }
 
 const getApiErrorMessage = (error: unknown): string => {
@@ -67,8 +67,8 @@ const promoService = {
   getPromoById: async (id: string): Promise<Promo | null> => {
     try {
       const response = await apiClient.get<PromoDetailResponse>(`/promo/${id}`);
-      console.log("✅ Promo fetched:", response.data.data.id);
-      return response.data.data;
+      console.log("✅ Promo fetched:", response.data.data?.id);
+      return response.data.data ?? null;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch promo:", getApiErrorMessage(error));
       return null;
@@ -114,8 +114,21 @@ const promoService = {
         "/create-promo",
         data,
       );
-      console.log("✅ Promo created successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Promo created successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedPromos = await promoService.getAllPromos(1, 100);
+      const createdPromo =
+        refreshedPromos.find(
+          (promo) =>
+            promo.promo_code === data.promo_code || promo.title === data.title,
+        ) ?? null;
+
+      console.log("✅ Promo created successfully:", response.data.message);
+      return createdPromo;
     } catch (error: unknown) {
       console.error("❌ Failed to create promo:", getApiErrorMessage(error));
       return null;
@@ -140,8 +153,15 @@ const promoService = {
         `/update-promo/${id}`,
         data,
       );
-      console.log("✅ Promo updated successfully:", response.data.data.id);
-      return response.data.data;
+
+      if (response.data.data) {
+        console.log("✅ Promo updated successfully:", response.data.data.id);
+        return response.data.data;
+      }
+
+      const refreshedPromo = await promoService.getPromoById(id);
+      console.log("✅ Promo updated successfully:", response.data.message);
+      return refreshedPromo;
     } catch (error: unknown) {
       console.error("❌ Failed to update promo:", getApiErrorMessage(error));
       return null;

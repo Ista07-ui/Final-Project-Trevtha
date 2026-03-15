@@ -9,17 +9,28 @@ export default function NewPromoPage() {
       backHref="/admin/promos"
       saveLabel="Save Promo"
       fields={[
+        { label: "Promo Title", placeholder: "Trevtha Golden Escape" },
+        { label: "Image URL", placeholder: "https://..." },
         { label: "Promo Code", placeholder: "TREVTHAGOLD2025" },
-        { label: "Discount Type", options: ["Percentage", "Fixed Amount"] },
-        { label: "Discount Value", placeholder: "20% or Rp 50.000" },
-        { label: "Minimum Purchase", placeholder: "Rp 500.000" },
-        { label: "Start Date", type: "date" },
-        { label: "End Date", type: "date" },
-        { label: "Status", options: ["Active", "Upcoming", "Expired"] },
         {
-          label: "Promo Notes",
+          label: "Discount Value",
+          type: "number",
+          placeholder: "50000",
+        },
+        {
+          label: "Minimum Purchase",
+          type: "number",
+          placeholder: "500000",
+        },
+        {
+          label: "Terms Condition",
           textarea: true,
-          placeholder: "Optional campaign notes",
+          placeholder: "Valid on selected activities only",
+        },
+        {
+          label: "Description",
+          textarea: true,
+          placeholder: "Describe this promo campaign",
         },
       ]}
     />
