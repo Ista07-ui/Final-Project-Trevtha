@@ -113,6 +113,13 @@ export default function TransactionsPage() {
     setIsSubmitting(false);
   };
 
+  const handleSelectTransaction = (transactionId: string) => {
+    setSelectedTransactionId(transactionId);
+    document
+      .getElementById("transaction-detail")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const getStatusClass = (status: Transaction["status"]) => {
     if (status === "success") return "bg-green-100 text-green-700";
     if (status === "pending")
@@ -232,7 +239,7 @@ export default function TransactionsPage() {
                   <tr
                     key={transaction.id}
                     className={`hover:bg-background-light/50 transition-colors cursor-pointer ${selectedTransaction?.id === transaction.id ? "bg-background-light/60" : ""}`}
-                    onClick={() => setSelectedTransactionId(transaction.id)}
+                    onClick={() => handleSelectTransaction(transaction.id)}
                   >
                     <td className="px-6 py-5 font-bold text-forest">
                       {transaction.invoiceId || transaction.id}
@@ -258,16 +265,19 @@ export default function TransactionsPage() {
                     </td>
                     <td className="px-6 py-5 text-center">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedTransactionId(transaction.id);
-                          document
-                            .getElementById("transaction-detail")
-                            ?.scrollIntoView({ behavior: "smooth" });
+                          handleSelectTransaction(transaction.id);
                         }}
-                        className="text-primary font-bold hover:underline"
+                        className={`inline-flex items-center gap-1 font-bold ${selectedTransaction?.id === transaction.id ? "text-forest" : "text-primary hover:underline"}`}
                       >
-                        View Details
+                        <span className="material-symbols-outlined text-base">
+                          visibility
+                        </span>
+                        {selectedTransaction?.id === transaction.id
+                          ? "Selected"
+                          : "View Details"}
                       </button>
                     </td>
                   </tr>

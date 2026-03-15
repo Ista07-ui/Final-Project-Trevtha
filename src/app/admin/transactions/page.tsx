@@ -74,6 +74,7 @@ export default function ManageTransactionsPage() {
   const storedRecords = useStoredAdminRecords("transactions");
   const [apiTransactions, setApiTransactions] = useState<Transaction[]>([]);
   const [isLoadingApi, setIsLoadingApi] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "pending" | "success" | "cancelled" | "failed"
@@ -160,6 +161,30 @@ export default function ManageTransactionsPage() {
   const handleDeleteRecord = (formId: string) => {
     deleteStoredAdminRecord("transactions", formId);
     setDeleteKey((prev) => prev + 1);
+  };
+
+  const handleUpdateStatus = async (
+    transactionId: string,
+    status: "success" | "cancelled",
+  ) => {
+    setUpdatingStatusId(transactionId);
+    const result = await transactionService.updateTransaction(transactionId, {
+      status,
+    });
+
+    if (!result.success) {
+      toast.error(result.message || "Failed to update transaction status");
+      setUpdatingStatusId(null);
+      return;
+    }
+
+    await loadTransactions();
+    toast.success(
+      status === "success"
+        ? "Transaction approved as success"
+        : "Transaction cancelled",
+    );
+    setUpdatingStatusId(null);
   };
 
   return (
@@ -304,12 +329,17 @@ export default function ManageTransactionsPage() {
                       user?: { name?: string; email?: string };
                     }
                   ).user;
+                  const hasUserIdentity = Boolean(
+                    userData?.name?.trim() || userData?.email?.trim(),
+                  );
                   const customerName =
-                    userData?.name?.trim() ||
-                    `User ${transaction.userId.slice(0, 8).toUpperCase()}`;
+                    userData?.name?.trim() || `User ID ${transaction.userId.slice(0, 8).toUpperCase()}`;
                   const customerMeta =
-                    userData?.email?.trim() || `userId: ${transaction.userId}`;
-                  const customerInitial = customerName.charAt(0).toUpperCase() || "U";
+                    userData?.email?.trim() ||
+                    "Name/email not provided by transaction API";
+                  const customerInitial = hasUserIdentity
+                    ? customerName.charAt(0).toUpperCase()
+                    : "#";
                   const statusColorClass =
                     status === "success"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -377,13 +407,47 @@ export default function ManageTransactionsPage() {
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2">
                           <Link
-                            href={`/admin/transactions/${transaction.id}/edit`}
+                            href={{
+                              pathname: `/admin/transactions/${transaction.id}/edit`,
+                              query: {
+                                invoiceId: transaction.invoiceId || transaction.id,
+                                userId: transaction.userId,
+                                customerName,
+                                customerMeta,
+                              },
+                            }}
                             className="p-1.5 text-charcoal/40 hover:text-gold"
                           >
                             <span className="material-symbols-outlined text-lg">
                               visibility
                             </span>
                           </Link>
+                          <button
+                            onClick={() => handleUpdateStatus(transaction.id, "success")}
+                            disabled={
+                              updatingStatusId === transaction.id ||
+                              transaction.status === "success"
+                            }
+                            className="p-1.5 text-charcoal/40 hover:text-emerald-600 disabled:opacity-40"
+                            title="Mark as success"
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              check_circle
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(transaction.id, "cancelled")}
+                            disabled={
+                              updatingStatusId === transaction.id ||
+                              transaction.status === "cancelled"
+                            }
+                            className="p-1.5 text-charcoal/40 hover:text-red-600 disabled:opacity-40"
+                            title="Cancel transaction"
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              cancel
+                            </span>
+                          </button>
                         </div>
                       </td>
                     </tr>
