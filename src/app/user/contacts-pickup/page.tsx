@@ -13,50 +13,123 @@ type Passenger = {
   image: string;
 };
 
+type PickupLocation = {
+  id: number;
+  label: string;
+  name: string;
+  address: string;
+  notes: string;
+  mapImage: string;
+};
+
+type EmergencyContact = {
+  fullName: string;
+  relationship: string;
+  phoneNumber: string;
+};
+
+type CommunicationPreferences = {
+  contactMethod: "WhatsApp" | "Phone" | "Email";
+  notifyDriverUpdates: boolean;
+  notifyItineraryUpdates: boolean;
+};
+
 const PASSENGER_STORAGE_KEY = "trevtha_user_passengers";
+const PICKUP_STORAGE_KEY = "trevtha_user_pickup_locations";
+const EMERGENCY_STORAGE_KEY = "trevtha_user_emergency_contact";
+const COMM_PREFS_STORAGE_KEY = "trevtha_user_comm_preferences";
+
+const DEFAULT_PICKUP_IMAGE =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD63198nMjJ4IyEEs4YP7i3a9TLJrLNNKo0eX_D2rnaseLJ91hvAgBXbV9C0-1eULWBnDHqdhgzk43FidtG9-j5fCQ_CRtS-yMbbJ8Tams53UkcUjc2AnXW4T9dSKP_jT0qA8EeBBJYMzSf2ZwaO9DYIw0xQ0J1e43yBKa9tGbCi_UWGppgEN9UZA9AfW1jynjMd-IV886xuPlMKsRK8sWwR00UmPs2Pc1jpOd7JLDC7yUdwqM_-IEVEyX8x_Y9xW6u4MM1BFbXqzdy";
+
+const DEFAULT_EMERGENCY_CONTACT: EmergencyContact = {
+  fullName: "",
+  relationship: "Spouse",
+  phoneNumber: "",
+};
+
+const DEFAULT_COMM_PREFERENCES: CommunicationPreferences = {
+  contactMethod: "WhatsApp",
+  notifyDriverUpdates: true,
+  notifyItineraryUpdates: true,
+};
+
+const getUserScopedKey = (baseKey: string) => {
+  try {
+    const raw = localStorage.getItem("trevtha_user");
+    const user = raw ? (JSON.parse(raw) as { id?: string }) : null;
+    return user?.id ? `${baseKey}_${user.id}` : baseKey;
+  } catch {
+    return baseKey;
+  }
+};
 
 export default function ContactsPickupPage() {
-  const defaultPassengers: Passenger[] = [
-    {
-      id: 1,
-      name: "Alexander Hunt",
-      gender: "Male",
-      dob: "12/05/1985",
-      identityType: "NIK",
-      identityNumber: "3201**********88",
-      image:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuAr8MJJelI-OOfsDnb1wtQ1lH7VPio2s2r2uHA7JKfwgHbpQCdJMgB5nzmQdk5VNCti1lCLpFyrrknMjbQromvpaip0e3lU_4WdR7xqpiK6pk9lmckfPD-3qCKnCr8mG2o-_YL0Tq51ypKK7DlAwLcticqaQzMA1nsmPRPx9j1CFmY6tEI1gViXqGPyRMcr6yOGU0rwiJ9WVa1m-Md3b68S9Bq0TVWngy-n2OigiysF7AkJLZLuN2Sdw33elKMW0pnzIyy5UasSxF4Q",
-    },
-    {
-      id: 2,
-      name: "Sophia Chen",
-      gender: "Female",
-      dob: "24/08/1992",
-      identityType: "Passport",
-      identityNumber: "E91****22",
-      image:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuASNiUe35SeO1TMkVirBBTnOAbS0fM-VAB1IjokzCCK2AaaakyiPm9iWn5jzXctmd9yxYFVi4pLLc_0G7jBU9Q8506IexZauuyd9G-9J3V82wEqm5zELATTgDmS1zK7goGKeieP8WzqAlx_jQEAKY50zWsSeCzeWsK6ossTSk3YCXaFkK3eG-vrWfg6DqFblQf4daYXNODjBNNBtcrehr0A3xbLrqOKH__YhmM7zXr9I_i5X9Lom0SQ3-XS8gkG8VeIaUk5fBAcD_pf",
-    },
-  ];
-
   const [passengers, setPassengers] = useState<Passenger[]>(() => {
     try {
-      const raw = localStorage.getItem(PASSENGER_STORAGE_KEY);
+      const key = getUserScopedKey(PASSENGER_STORAGE_KEY);
+      const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw) as Passenger[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
     } catch {
-      // Return default on error
+      // ignore
     }
-    return defaultPassengers;
+    return [];
   });
   const [isPassengerFormOpen, setIsPassengerFormOpen] = useState(false);
   const [editingPassengerId, setEditingPassengerId] = useState<number | null>(
     null,
   );
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>(
+    () => {
+      try {
+        const key = getUserScopedKey(PICKUP_STORAGE_KEY);
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as PickupLocation[];
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore
+      }
+      return [];
+    },
+  );
+  const [isPickupFormOpen, setIsPickupFormOpen] = useState(false);
+  const [editingPickupId, setEditingPickupId] = useState<number | null>(null);
+  const [emergencyContact, setEmergencyContact] = useState<EmergencyContact>(
+    () => {
+      try {
+        const key = getUserScopedKey(EMERGENCY_STORAGE_KEY);
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          return JSON.parse(raw) as EmergencyContact;
+        }
+      } catch {
+        // ignore
+      }
+      return DEFAULT_EMERGENCY_CONTACT;
+    },
+  );
+  const [commPrefs, setCommPrefs] = useState<CommunicationPreferences>(() => {
+    try {
+      const key = getUserScopedKey(COMM_PREFS_STORAGE_KEY);
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        return JSON.parse(raw) as CommunicationPreferences;
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_COMM_PREFERENCES;
+  });
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [passengerForm, setPassengerForm] = useState({
     name: "",
     gender: "Male" as "Male" | "Female",
@@ -66,10 +139,41 @@ export default function ContactsPickupPage() {
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuAr8MJJelI-OOfsDnb1wtQ1lH7VPio2s2r2uHA7JKfwgHbpQCdJMgB5nzmQdk5VNCti1lCLpFyrrknMjbQromvpaip0e3lU_4WdR7xqpiK6pk9lmckfPD-3qCKnCr8mG2o-_YL0Tq51ypKK7DlAwLcticqaQzMA1nsmPRPx9j1CFmY6tEI1gViXqGPyRMcr6yOGU0rwiJ9WVa1m-Md3b68S9Bq0TVWngy-n2OigiysF7AkJLZLuN2Sdw33elKMW0pnzIyy5UasSxF4Q",
   });
+  const [pickupForm, setPickupForm] = useState({
+    label: "Home",
+    name: "",
+    address: "",
+    notes: "",
+    mapImage: DEFAULT_PICKUP_IMAGE,
+  });
 
   useEffect(() => {
-    localStorage.setItem(PASSENGER_STORAGE_KEY, JSON.stringify(passengers));
+    localStorage.setItem(
+      getUserScopedKey(PASSENGER_STORAGE_KEY),
+      JSON.stringify(passengers),
+    );
   }, [passengers]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      getUserScopedKey(PICKUP_STORAGE_KEY),
+      JSON.stringify(pickupLocations),
+    );
+  }, [pickupLocations]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      getUserScopedKey(EMERGENCY_STORAGE_KEY),
+      JSON.stringify(emergencyContact),
+    );
+  }, [emergencyContact]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      getUserScopedKey(COMM_PREFS_STORAGE_KEY),
+      JSON.stringify(commPrefs),
+    );
+  }, [commPrefs]);
 
   const resetPassengerForm = () => {
     setPassengerForm({
@@ -156,26 +260,72 @@ export default function ContactsPickupPage() {
     setPassengers((prev) => prev.filter((item) => item.id !== passengerId));
   };
 
-  const pickupLocations = [
-    {
-      id: 1,
+  const openCreatePickupForm = () => {
+    setPickupForm({
       label: "Home",
-      name: "The Penthouse Residence",
-      address: "1221 Avenue of the Americas, Floor 45, NY 10020",
-      notes: '"Black gate with gold accents, ring bell 402."',
-      mapImage:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuD63198nMjJ4IyEEs4YP7i3a9TLJrLNNKo0eX_D2rnaseLJ91hvAgBXbV9C0-1eULWBnDHqdhgzk43FidtG9-j5fCQ_CRtS-yMbbJ8Tams53UkcUjc2AnXW4T9dSKP_jT0qA8EeBBJYMzSf2ZwaO9DYIw0xQ0J1e43yBKa9tGbCi_UWGppgEN9UZA9AfW1jynjMd-IV886xuPlMKsRK8sWwR00UmPs2Pc1jpOd7JLDC7yUdwqM_-IEVEyX8x_Y9xW6u4MM1BFbXqzdy",
-    },
-    {
-      id: 2,
-      label: "Office",
-      name: "Global Trade Center",
-      address: "88 Corporate Plaza, Suite 200, Finance District",
-      notes: '"Main lobby entrance near the fountain."',
-      mapImage:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuAMspqzyeKnV8w2z0Hf17cBwC4OfQoJGRrx4V9xIu6ZO2Ruy9AhIaqJUq864dx9MuhcvL_5P_825g0s8URHhEi672yqQF2NYqzNreYw7bGRFst7yTrDKHeUK8oeLPDRS8ccUkVGnjnT5Ir1Jgpr4yP-9qMTDyws5tzq0t9d9rMiOn_FP1_el6ooYrU1gfzkUJ9fkbt20EOoGWIYuC9DYDiFnHzWBumLDHSuUBn7veq1g2iOT-5hgjcKut6hxPfbyRRQC66uq1iMG4pE",
-    },
-  ];
+      name: "",
+      address: "",
+      notes: "",
+      mapImage: DEFAULT_PICKUP_IMAGE,
+    });
+    setEditingPickupId(null);
+    setIsPickupFormOpen(true);
+  };
+
+  const openEditPickupForm = (location: PickupLocation) => {
+    setPickupForm({
+      label: location.label,
+      name: location.name,
+      address: location.address,
+      notes: location.notes,
+      mapImage: location.mapImage,
+    });
+    setEditingPickupId(location.id);
+    setIsPickupFormOpen(true);
+  };
+
+  const closePickupForm = () => {
+    setIsPickupFormOpen(false);
+    setEditingPickupId(null);
+  };
+
+  const handlePickupSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!pickupForm.name || !pickupForm.address) {
+      return;
+    }
+
+    if (editingPickupId !== null) {
+      setPickupLocations((prev) =>
+        prev.map((item) =>
+          item.id === editingPickupId ? { ...item, ...pickupForm } : item,
+        ),
+      );
+      setActionMessage("Pickup location updated.");
+    } else {
+      setPickupLocations((prev) => [{ id: Date.now(), ...pickupForm }, ...prev]);
+      setActionMessage("Pickup location added.");
+    }
+
+    closePickupForm();
+    setTimeout(() => setActionMessage(null), 2500);
+  };
+
+  const handleDeletePickup = (pickupId: number) => {
+    setPickupLocations((prev) => prev.filter((item) => item.id !== pickupId));
+    setActionMessage("Pickup location removed.");
+    setTimeout(() => setActionMessage(null), 2500);
+  };
+
+  const handleSaveEmergency = () => {
+    setActionMessage("Emergency contact saved.");
+    setTimeout(() => setActionMessage(null), 2500);
+  };
+
+  const handleSaveCommPrefs = () => {
+    setActionMessage("Communication preferences saved.");
+    setTimeout(() => setActionMessage(null), 2500);
+  };
 
   return (
     <div className="layout-container flex h-full grow flex-col bg-background-light text-charcoal [--color-primary:#1B3022] [--color-forest:#1B3022] [--color-gold:#D4AF37] [--color-background-light:#F9F7F2] [--color-background-dark:#121212]">
@@ -202,6 +352,12 @@ export default function ContactsPickupPage() {
             Add New Contact
           </button>
         </header>
+
+        {actionMessage ? (
+          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+            {actionMessage}
+          </div>
+        ) : null}
 
         {isPassengerFormOpen && (
           <section className="mb-8 rounded-xl border border-primary/10 bg-white p-6 shadow-sm">
@@ -378,14 +534,29 @@ export default function ContactsPickupPage() {
                     <input
                       className="bg-cream border-none rounded-lg focus:ring-2 focus:ring-primary py-3 px-4 text-sm font-medium"
                       type="text"
-                      defaultValue="Eleanor Hunt"
+                      value={emergencyContact.fullName}
+                      onChange={(e) =>
+                        setEmergencyContact((prev) => ({
+                          ...prev,
+                          fullName: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">
                       Relationship
                     </label>
-                    <select className="bg-cream border-none rounded-lg focus:ring-2 focus:ring-primary py-3 px-4 text-sm font-medium">
+                    <select
+                      className="bg-cream border-none rounded-lg focus:ring-2 focus:ring-primary py-3 px-4 text-sm font-medium"
+                      value={emergencyContact.relationship}
+                      onChange={(e) =>
+                        setEmergencyContact((prev) => ({
+                          ...prev,
+                          relationship: e.target.value,
+                        }))
+                      }
+                    >
                       <option>Spouse</option>
                       <option>Parent</option>
                       <option>Sibling</option>
@@ -404,11 +575,20 @@ export default function ContactsPickupPage() {
                     <input
                       className="bg-transparent border-none w-full focus:ring-0 py-3 text-sm font-medium"
                       type="tel"
-                      defaultValue="+1 (555) 012-3456"
+                      value={emergencyContact.phoneNumber}
+                      onChange={(e) =>
+                        setEmergencyContact((prev) => ({
+                          ...prev,
+                          phoneNumber: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                 </div>
-                <button className="mt-4 text-primary font-bold text-sm flex items-center gap-1 hover:underline">
+                <button
+                  onClick={handleSaveEmergency}
+                  className="mt-4 text-primary font-bold text-sm flex items-center gap-1 hover:underline"
+                >
                   Save Emergency Info
                 </button>
               </div>
@@ -430,10 +610,16 @@ export default function ContactsPickupPage() {
                   <div className="flex flex-wrap gap-4">
                     <label className="flex items-center gap-2 cursor-pointer bg-cream px-4 py-2 rounded-full text-sm font-medium border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/10">
                       <input
-                        defaultChecked
                         className="text-primary focus:ring-primary w-4 h-4"
                         name="contact"
                         type="radio"
+                        checked={commPrefs.contactMethod === "WhatsApp"}
+                        onChange={() =>
+                          setCommPrefs((prev) => ({
+                            ...prev,
+                            contactMethod: "WhatsApp",
+                          }))
+                        }
                       />
                       WhatsApp
                     </label>
@@ -442,6 +628,13 @@ export default function ContactsPickupPage() {
                         className="text-primary focus:ring-primary w-4 h-4"
                         name="contact"
                         type="radio"
+                        checked={commPrefs.contactMethod === "Phone"}
+                        onChange={() =>
+                          setCommPrefs((prev) => ({
+                            ...prev,
+                            contactMethod: "Phone",
+                          }))
+                        }
                       />
                       Phone
                     </label>
@@ -450,6 +643,13 @@ export default function ContactsPickupPage() {
                         className="text-primary focus:ring-primary w-4 h-4"
                         name="contact"
                         type="radio"
+                        checked={commPrefs.contactMethod === "Email"}
+                        onChange={() =>
+                          setCommPrefs((prev) => ({
+                            ...prev,
+                            contactMethod: "Email",
+                          }))
+                        }
                       />
                       Email
                     </label>
@@ -461,9 +661,15 @@ export default function ContactsPickupPage() {
                   </p>
                   <div className="flex items-center gap-3">
                     <input
-                      defaultChecked
                       className="rounded border-slate-300 text-forest focus:ring-forest w-5 h-5"
                       type="checkbox"
+                      checked={commPrefs.notifyDriverUpdates}
+                      onChange={(e) =>
+                        setCommPrefs((prev) => ({
+                          ...prev,
+                          notifyDriverUpdates: e.target.checked,
+                        }))
+                      }
                     />
                     <span className="text-sm font-medium text-slate-700">
                       Driver arrival and status updates
@@ -471,15 +677,27 @@ export default function ContactsPickupPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <input
-                      defaultChecked
                       className="rounded border-slate-300 text-forest focus:ring-forest w-5 h-5"
                       type="checkbox"
+                      checked={commPrefs.notifyItineraryUpdates}
+                      onChange={(e) =>
+                        setCommPrefs((prev) => ({
+                          ...prev,
+                          notifyItineraryUpdates: e.target.checked,
+                        }))
+                      }
                     />
                     <span className="text-sm font-medium text-slate-700">
                       Itinerary changes and delay alerts
                     </span>
                   </div>
                 </div>
+                <button
+                  onClick={handleSaveCommPrefs}
+                  className="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
+                >
+                  Save Preferences
+                </button>
               </div>
             </section>
           </div>
@@ -491,59 +709,151 @@ export default function ContactsPickupPage() {
                 <span className="material-symbols-outlined">location_on</span>
                 Saved Pickup Points
               </h3>
-              <button className="text-forest font-bold text-sm flex items-center gap-1 hover:text-primary transition-colors">
+              <button
+                onClick={openCreatePickupForm}
+                className="text-forest font-bold text-sm flex items-center gap-1 hover:text-primary transition-colors"
+              >
                 <span className="material-symbols-outlined text-base">add</span>{" "}
                 Add New Location
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {pickupLocations.map((location) => (
-                <div
-                  key={location.id}
-                  className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm flex flex-col md:flex-row"
+
+            {isPickupFormOpen ? (
+              <form
+                onSubmit={handlePickupSubmit}
+                className="mb-6 rounded-xl border border-primary/10 bg-white p-6 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                <select
+                  value={pickupForm.label}
+                  onChange={(e) =>
+                    setPickupForm((prev) => ({ ...prev, label: e.target.value }))
+                  }
+                  className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
                 >
-                  <div className="w-full md:w-32 bg-slate-200">
-                    <div
-                      className="h-full w-full bg-cover bg-center min-h-[120px]"
-                      style={{
-                        backgroundImage: `url('${location.mapImage}')`,
-                      }}
-                    ></div>
-                  </div>
-                  <div className="p-6 flex-1">
-                    <div className="flex justify-between items-start mb-2">
-                      <span
-                        className={`${
-                          location.label === "Home"
-                            ? "bg-forest text-primary"
-                            : "bg-primary/20 text-forest"
-                        } text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded`}
-                      >
-                        {location.label}
-                      </span>
-                      <button className="text-slate-400 hover:text-primary">
-                        <span className="material-symbols-outlined text-sm">
-                          edit
-                        </span>
-                      </button>
-                    </div>
-                    <h4 className="font-bold text-slate-900">
-                      {location.name}
-                    </h4>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {location.address}
-                    </p>
-                    <div className="mt-4 pt-4 border-t border-slate-50">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase mb-1">
-                        Pickup Notes
-                      </p>
-                      <p className="text-sm text-slate-600 italic">
-                        {location.notes}
-                      </p>
-                    </div>
-                  </div>
+                  <option value="Home">Home</option>
+                  <option value="Office">Office</option>
+                  <option value="Hotel">Hotel</option>
+                  <option value="Other">Other</option>
+                </select>
+                <input
+                  type="text"
+                  value={pickupForm.name}
+                  onChange={(e) =>
+                    setPickupForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Location Name"
+                  className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
+                  required
+                />
+                <input
+                  type="text"
+                  value={pickupForm.address}
+                  onChange={(e) =>
+                    setPickupForm((prev) => ({ ...prev, address: e.target.value }))
+                  }
+                  placeholder="Full Address"
+                  className="md:col-span-2 rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
+                  required
+                />
+                <input
+                  type="text"
+                  value={pickupForm.notes}
+                  onChange={(e) =>
+                    setPickupForm((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                  placeholder="Pickup Notes"
+                  className="md:col-span-2 rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+                <input
+                  type="url"
+                  value={pickupForm.mapImage}
+                  onChange={(e) =>
+                    setPickupForm((prev) => ({ ...prev, mapImage: e.target.value }))
+                  }
+                  placeholder="Map Image URL"
+                  className="md:col-span-2 rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+                <div className="md:col-span-2 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closePickupForm}
+                    className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-forest px-5 py-2.5 text-sm font-bold text-white hover:bg-opacity-90"
+                  >
+                    {editingPickupId !== null ? "Update Location" : "Save Location"}
+                  </button>
                 </div>
-              ))}
+              </form>
+            ) : null}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {pickupLocations.length === 0 ? (
+                <div className="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+                  Belum ada pickup location. Klik "Add New Location" untuk menambah.
+                </div>
+              ) : (
+                pickupLocations.map((location) => (
+                  <div
+                    key={location.id}
+                    className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm flex flex-col md:flex-row"
+                  >
+                    <div className="w-full md:w-32 bg-slate-200">
+                      <div
+                        className="h-full w-full bg-cover bg-center min-h-[120px]"
+                        style={{
+                          backgroundImage: `url('${location.mapImage || DEFAULT_PICKUP_IMAGE}')`,
+                        }}
+                      ></div>
+                    </div>
+                    <div className="p-6 flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <span
+                          className={`${
+                            location.label === "Home"
+                              ? "bg-forest text-primary"
+                              : "bg-primary/20 text-forest"
+                          } text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded`}
+                        >
+                          {location.label}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEditPickupForm(location)}
+                            className="text-slate-400 hover:text-primary"
+                          >
+                            <span className="material-symbols-outlined text-sm">
+                              edit
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => handleDeletePickup(location.id)}
+                            className="text-slate-400 hover:text-red-500"
+                          >
+                            <span className="material-symbols-outlined text-sm">
+                              delete
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-slate-900">{location.name}</h4>
+                      <p className="text-sm text-slate-500 mt-1">{location.address}</p>
+                      <div className="mt-4 pt-4 border-t border-slate-50">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase mb-1">
+                          Pickup Notes
+                        </p>
+                        <p className="text-sm text-slate-600 italic">
+                          {location.notes || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>

@@ -17,6 +17,9 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState("");
 
   const loadTransactions = async () => {
     setIsLoading(true);
@@ -60,24 +63,13 @@ export default function TransactionsPage() {
     null;
 
   const handleUploadProof = async () => {
-    if (!selectedTransaction) {
-      return;
-    }
-
-    const proofPaymentUrl = window.prompt(
-      "Masukkan URL bukti pembayaran:",
-      selectedTransaction.proofPaymentUrl ||
-        "https://example.com/proof-payment.jpg",
-    );
-
-    if (!proofPaymentUrl) {
-      return;
-    }
+    if (!selectedTransaction || !uploadUrl.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     const result = await transactionService.uploadPaymentProof(
       selectedTransaction.id,
-      proofPaymentUrl,
+      uploadUrl.trim(),
     );
 
     if (!result.success) {
@@ -86,6 +78,10 @@ export default function TransactionsPage() {
       return;
     }
 
+    setIsUploadOpen(false);
+    setUploadUrl("");
+    setSuccessMsg("Payment proof uploaded successfully!");
+    setTimeout(() => setSuccessMsg(null), 4000);
     await loadTransactions();
     setIsSubmitting(false);
   };
@@ -111,6 +107,8 @@ export default function TransactionsPage() {
       return;
     }
 
+    setSuccessMsg("Transaction cancelled.");
+    setTimeout(() => setSuccessMsg(null), 4000);
     await loadTransactions();
     setIsSubmitting(false);
   };
@@ -153,6 +151,12 @@ export default function TransactionsPage() {
         {error ? (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
+          </div>
+        ) : null}
+
+        {successMsg ? (
+          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+            {successMsg}
           </div>
         ) : null}
 
@@ -253,7 +257,16 @@ export default function TransactionsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <button className="text-primary font-bold hover:underline">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTransactionId(transaction.id);
+                          document
+                            .getElementById("transaction-detail")
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="text-primary font-bold hover:underline"
+                      >
                         View Details
                       </button>
                     </td>
@@ -267,7 +280,7 @@ export default function TransactionsPage() {
         {/* Detail Breakdown Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Transaction Detail Card */}
-          <div className="bg-white rounded-xl shadow-lg border border-primary/20 p-8">
+          <div id="transaction-detail" className="bg-white rounded-xl shadow-lg border border-primary/20 p-8">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
@@ -370,14 +383,18 @@ export default function TransactionsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={handleUploadProof}
+                onClick={() => {
+                  if (!selectedTransaction) return;
+                  setUploadUrl(selectedTransaction.proofPaymentUrl || "");
+                  setIsUploadOpen(true);
+                }}
                 disabled={!selectedTransaction || isSubmitting}
                 className="bg-forest text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-forest/90 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-lg">
                   cloud_upload
                 </span>
-                {isSubmitting ? "Processing..." : "Upload Proof"}
+                Upload Proof
               </button>
               <button
                 onClick={handleCancelTransaction}
@@ -466,6 +483,49 @@ export default function TransactionsPage() {
           </div>
         </div>
       </main>
+
+      {/* Upload Proof Modal */}
+      {isUploadOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+            <h3 className="text-xl font-bold text-forest mb-1">
+              Upload Payment Proof
+            </h3>
+            <p className="text-sm text-charcoal/60 mb-6">
+              Paste the URL of your payment receipt or screenshot.
+            </p>
+            <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+              Proof Image URL
+            </label>
+            <input
+              type="url"
+              placeholder="https://example.com/proof.jpg"
+              value={uploadUrl}
+              onChange={(e) => setUploadUrl(e.target.value)}
+              className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest focus:border-primary focus:outline-none mb-6"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleUploadProof}
+                disabled={isSubmitting || !uploadUrl.trim()}
+                className="flex-1 rounded-lg bg-forest px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60 hover:bg-forest/80"
+              >
+                {isSubmitting ? "Uploading..." : "Submit"}
+              </button>
+              <button
+                onClick={() => {
+                  setIsUploadOpen(false);
+                  setUploadUrl("");
+                }}
+                disabled={isSubmitting}
+                className="flex-1 rounded-lg border border-primary/20 px-6 py-2.5 text-sm font-bold text-forest hover:bg-primary/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

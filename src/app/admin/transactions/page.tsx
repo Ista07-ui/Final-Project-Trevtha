@@ -74,23 +74,87 @@ export default function ManageTransactionsPage() {
   const storedRecords = useStoredAdminRecords("transactions");
   const [apiTransactions, setApiTransactions] = useState<Transaction[]>([]);
   const [isLoadingApi, setIsLoadingApi] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "pending" | "success" | "cancelled" | "failed"
+  >("all");
   const toast = useToast();
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoadingApi(true);
-      const result = await transactionService.getTransactions(1, 50);
+  const normalizedSearch = searchTerm.trim().toLowerCase();
 
-      if (result.success && Array.isArray(result.data)) {
-        setApiTransactions(result.data);
-      } else {
-        toast.error(result.message || "Failed to load transactions");
+  const filteredApiTransactions = apiTransactions.filter((transaction) => {
+    const userData = (
+      transaction as Transaction & {
+        user?: { name?: string; email?: string };
       }
+    ).user;
 
+    const invoice = (transaction.invoiceId || transaction.id || "").toLowerCase();
+    const userId = (transaction.userId || "").toLowerCase();
+    const userName = (userData?.name || "").toLowerCase();
+    const userEmail = (userData?.email || "").toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      invoice.includes(normalizedSearch) ||
+      userId.includes(normalizedSearch) ||
+      userName.includes(normalizedSearch) ||
+      userEmail.includes(normalizedSearch);
+
+    const matchesStatus =
+      statusFilter === "all" || transaction.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredStoredRecords = storedRecords.filter((record) => {
+    const status = getStoredValue(record.values, ["status"], "pending").toLowerCase();
+    const invoice = getStoredValue(record.values, ["invoice_id", "transaction_id"], "").toLowerCase();
+    const userId = getStoredValue(record.values, ["user_id"], "").toLowerCase();
+    const customer = getStoredValue(record.values, ["customer_name"], "").toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      invoice.includes(normalizedSearch) ||
+      userId.includes(normalizedSearch) ||
+      customer.includes(normalizedSearch);
+
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredSeedTransactions = transactions.filter((item) => {
+    const invoice = item.id.toLowerCase();
+    const customer = item.customer.toLowerCase();
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      invoice.includes(normalizedSearch) ||
+      customer.includes(normalizedSearch);
+
+    const normalizedStatus = item.status.toLowerCase();
+    const mappedStatus =
+      normalizedStatus === "canceled" ? "cancelled" : normalizedStatus;
+    const matchesStatus = statusFilter === "all" || mappedStatus === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const loadTransactions = async () => {
+    setIsLoadingApi(true);
+    const result = await transactionService.getTransactions(1, 50);
+
+    if (result.success && Array.isArray(result.data)) {
+      setApiTransactions(result.data);
       setIsLoadingApi(false);
-    };
+      return;
+    }
 
-    fetchTransactions();
+    toast.error(result.message || "Failed to load transactions");
+    setIsLoadingApi(false);
+  };
+
+  useEffect(() => {
+    loadTransactions();
   }, []);
 
   const handleDeleteRecord = (formId: string) => {
@@ -112,8 +176,14 @@ export default function ManageTransactionsPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-forest/10 text-forest font-semibold rounded-xl hover:bg-forest/5">
-              <span className="material-symbols-outlined">refresh</span>
+            <button
+              onClick={loadTransactions}
+              disabled={isLoadingApi}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-forest/10 text-forest font-semibold rounded-xl hover:bg-forest/5 disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined">
+                {isLoadingApi ? "progress_activity" : "refresh"}
+              </span>
             </button>
             <Link
               href="/admin/transactions/new"
@@ -157,16 +227,44 @@ export default function ManageTransactionsPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-forest/5 mb-6">
           <div className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex border-b border-charcoal/5 lg:border-none">
-              <button className="px-6 py-3 text-sm font-bold text-gold border-b-2 border-gold">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`px-6 py-3 text-sm ${
+                  statusFilter === "all"
+                    ? "font-bold text-gold border-b-2 border-gold"
+                    : "font-medium text-charcoal/40"
+                }`}
+              >
                 All Transactions
               </button>
-              <button className="px-6 py-3 text-sm font-medium text-charcoal/40">
+              <button
+                onClick={() => setStatusFilter("pending")}
+                className={`px-6 py-3 text-sm ${
+                  statusFilter === "pending"
+                    ? "font-bold text-gold border-b-2 border-gold"
+                    : "font-medium text-charcoal/40"
+                }`}
+              >
                 Pending
               </button>
-              <button className="px-6 py-3 text-sm font-medium text-charcoal/40">
+              <button
+                onClick={() => setStatusFilter("success")}
+                className={`px-6 py-3 text-sm ${
+                  statusFilter === "success"
+                    ? "font-bold text-gold border-b-2 border-gold"
+                    : "font-medium text-charcoal/40"
+                }`}
+              >
                 Success
               </button>
-              <button className="px-6 py-3 text-sm font-medium text-charcoal/40">
+              <button
+                onClick={() => setStatusFilter("cancelled")}
+                className={`px-6 py-3 text-sm ${
+                  statusFilter === "cancelled"
+                    ? "font-bold text-gold border-b-2 border-gold"
+                    : "font-medium text-charcoal/40"
+                }`}
+              >
                 Canceled
               </button>
             </div>
@@ -175,8 +273,10 @@ export default function ManageTransactionsPage() {
                 search
               </span>
               <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-2.5 bg-cream border-none rounded-xl text-sm placeholder:text-charcoal/30"
-                placeholder="Search by Invoice ID or User..."
+                placeholder="Search by Invoice ID, User ID, or Customer..."
                 type="text"
               />
             </div>
@@ -197,8 +297,19 @@ export default function ManageTransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-charcoal/5">
-                {apiTransactions.map((transaction) => {
+                {filteredApiTransactions.map((transaction) => {
                   const status = transaction.status ?? "pending";
+                  const userData = (
+                    transaction as Transaction & {
+                      user?: { name?: string; email?: string };
+                    }
+                  ).user;
+                  const customerName =
+                    userData?.name?.trim() ||
+                    `User ${transaction.userId.slice(0, 8).toUpperCase()}`;
+                  const customerMeta =
+                    userData?.email?.trim() || `userId: ${transaction.userId}`;
+                  const customerInitial = customerName.charAt(0).toUpperCase() || "U";
                   const statusColorClass =
                     status === "success"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -219,14 +330,14 @@ export default function ManageTransactionsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-forest/10 flex items-center justify-center text-forest font-bold text-xs">
-                            U
+                            {customerInitial}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-charcoal">
-                              {transaction.userId}
+                              {customerName}
                             </span>
                             <span className="text-[10px] text-charcoal/40">
-                              -
+                              {customerMeta}
                             </span>
                           </div>
                         </div>
@@ -279,7 +390,7 @@ export default function ManageTransactionsPage() {
                   );
                 })}
 
-                {storedRecords.map((record, index) => (
+                {filteredStoredRecords.map((record, index) => (
                   <tr
                     key={`stored-${record.id}`}
                     className="hover:bg-cream/30 transition-colors"
@@ -357,7 +468,7 @@ export default function ManageTransactionsPage() {
                   </tr>
                 ))}
 
-                {transactions.map((item) => (
+                {filteredSeedTransactions.map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-cream/30 transition-colors"

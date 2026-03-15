@@ -9,6 +9,16 @@ export default function PaymentMethodsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [addCardForm, setAddCardForm] = useState({
+    cardType: "visa" as "visa" | "mastercard" | "amex" | "discover",
+    cardholderName: "",
+    cardNumber: "",
+    expiryDate: "",
+    cvv: "",
+  });
 
   const loadPaymentMethods = async () => {
     setIsLoading(true);
@@ -28,22 +38,46 @@ export default function PaymentMethodsPage() {
     setError(null);
 
     const result = await paymentService.addPaymentMethod({
-      cardType: "visa",
-      cardNumber: "4111111111111111",
-      expiryDate: "12/30",
-      cardholderName: "Trevtha User",
-      cvv: "123",
-      isDefault: true,
+      cardType: addCardForm.cardType,
+      cardNumber: addCardForm.cardNumber || "4111111111111111",
+      expiryDate: addCardForm.expiryDate || "12/30",
+      cardholderName: addCardForm.cardholderName || "Trevtha User",
+      cvv: addCardForm.cvv || "123",
+      isDefault: paymentMethods.length === 0,
     });
 
     if (!result) {
-      setError("Failed to generate payment methods");
+      setError("Failed to add card. Please try again.");
       setIsGenerating(false);
       return;
     }
 
     await loadPaymentMethods();
     setIsGenerating(false);
+    setIsAddCardOpen(false);
+    setAddCardForm({
+      cardType: "visa",
+      cardholderName: "",
+      cardNumber: "",
+      expiryDate: "",
+      cvv: "",
+    });
+    setSuccessMsg("Card added successfully!");
+    setTimeout(() => setSuccessMsg(null), 3000);
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm("Remove this payment method?")) return;
+    setIsDeletingId(cardId);
+    const ok = await paymentService.deletePaymentMethod(cardId);
+    if (ok) {
+      setPaymentMethods((prev) => prev.filter((m) => m.id !== cardId));
+      setSuccessMsg("Payment method removed.");
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } else {
+      setError("Failed to remove payment method.");
+    }
+    setIsDeletingId(null);
   };
 
   const featuredMethod = paymentMethods[0] ?? null;
@@ -70,18 +104,141 @@ export default function PaymentMethodsPage() {
               Refresh
             </button>
             <button
-              onClick={handleGenerateMethods}
-              disabled={isGenerating}
-              className="rounded-lg bg-forest px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+              onClick={() => setIsAddCardOpen((v) => !v)}
+              className="rounded-lg bg-forest px-4 py-2.5 text-sm font-bold text-white hover:bg-forest/80"
             >
-              {isGenerating ? "Generating..." : "Generate Payment Methods"}
+              {isAddCardOpen ? "Cancel" : "+ Add Card"}
             </button>
           </div>
+
+          {/* Add Card Form */}
+          {isAddCardOpen ? (
+            <div className="mt-6 rounded-2xl border border-primary/20 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-forest mb-4">
+                Add New Card
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+                    Card Type
+                  </label>
+                  <select
+                    value={addCardForm.cardType}
+                    onChange={(e) =>
+                      setAddCardForm({
+                        ...addCardForm,
+                        cardType: e.target.value as
+                          | "visa"
+                          | "mastercard"
+                          | "amex"
+                          | "discover",
+                      })
+                    }
+                    className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest focus:border-primary focus:outline-none"
+                  >
+                    <option value="visa">Visa</option>
+                    <option value="mastercard">Mastercard</option>
+                    <option value="amex">American Express</option>
+                    <option value="discover">Discover</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+                    Cardholder Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Thatha Ananta"
+                    value={addCardForm.cardholderName}
+                    onChange={(e) =>
+                      setAddCardForm({
+                        ...addCardForm,
+                        cardholderName: e.target.value,
+                      })
+                    }
+                    className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+                    Card Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 4111 1111 1111 1111"
+                    maxLength={19}
+                    value={addCardForm.cardNumber}
+                    onChange={(e) =>
+                      setAddCardForm({
+                        ...addCardForm,
+                        cardNumber: e.target.value.replace(/\D/g, ""),
+                      })
+                    }
+                    className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest font-mono focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+                    Expiry Date (MM/YY)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="12/30"
+                    maxLength={5}
+                    value={addCardForm.expiryDate}
+                    onChange={(e) =>
+                      setAddCardForm({
+                        ...addCardForm,
+                        expiryDate: e.target.value,
+                      })
+                    }
+                    className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-charcoal/60 uppercase tracking-wider mb-1">
+                    CVV
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="•••"
+                    maxLength={4}
+                    value={addCardForm.cvv}
+                    onChange={(e) =>
+                      setAddCardForm({ ...addCardForm, cvv: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-primary/20 bg-background-light px-4 py-2.5 text-sm text-forest focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="mt-5 flex gap-3">
+                <button
+                  onClick={handleGenerateMethods}
+                  disabled={isGenerating}
+                  className="rounded-lg bg-forest px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60 hover:bg-forest/80"
+                >
+                  {isGenerating ? "Adding..." : "Add Card"}
+                </button>
+                <button
+                  onClick={() => setIsAddCardOpen(false)}
+                  className="rounded-lg border border-primary/20 px-6 py-2.5 text-sm font-bold text-forest hover:bg-primary/5"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
         </header>
 
         {error ? (
           <div className="max-w-5xl mx-auto mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
+          </div>
+        ) : null}
+
+        {successMsg ? (
+          <div className="max-w-5xl mx-auto mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+            {successMsg}
           </div>
         ) : null}
 
@@ -103,8 +260,8 @@ export default function PaymentMethodsPage() {
                 </div>
               ) : paymentMethods.length === 0 ? (
                 <div className="col-span-3 rounded-2xl bg-white p-8 text-center text-charcoal/60 shadow-sm">
-                  Belum ada payment method. Klik tombol generate untuk mengambil
-                  data dari API.
+                  No payment methods yet. Click{" "}
+                  <strong>+ Add Card</strong> to add one.
                 </div>
               ) : (
                 paymentMethods.map((method, index) => (
@@ -140,7 +297,7 @@ export default function PaymentMethodsPage() {
                         {method.name}
                       </p>
                       <div className="flex justify-between items-end gap-4">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p
                             className={`text-[10px] uppercase ${index === 0 ? "opacity-60" : "text-charcoal/40"}`}
                           >
@@ -150,6 +307,17 @@ export default function PaymentMethodsPage() {
                             {method.virtual_account_number || method.id}
                           </p>
                         </div>
+                        <button
+                          onClick={() => handleDeleteCard(method.id)}
+                          disabled={isDeletingId === method.id}
+                          className={`z-10 shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-colors disabled:opacity-50 ${
+                            index === 0
+                              ? "bg-white/20 text-white hover:bg-white/30"
+                              : "bg-red-50 text-red-600 hover:bg-red-100"
+                          }`}
+                        >
+                          {isDeletingId === method.id ? "…" : "Remove"}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -158,56 +326,18 @@ export default function PaymentMethodsPage() {
             </div>
           </section>
 
-          {/* Section 2: Available Payment Options */}
-          <section className="space-y-8">
-            <h3 className="text-xl font-bold text-forest flex items-center gap-2 mb-6">
-              <span className="material-symbols-outlined text-primary">
-                account_balance_wallet
-              </span>
-              Available Payment Options
-            </h3>
-
-            {/* Bank Transfer */}
-            <div>
-              <p className="text-sm font-bold text-charcoal/40 uppercase tracking-widest mb-4">
-                Bank Transfer
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {paymentMethods.map((bank) => (
-                  <div
-                    key={`bank-${bank.id}`}
-                    className="bg-white p-4 rounded-xl border border-primary/10 hover:border-primary hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="flex flex-col gap-3">
-                      <div className="h-8 flex items-center justify-start grayscale group-hover:grayscale-0 transition-all">
-                        {bank.imageUrl ? (
-                          <img
-                            alt={bank.name}
-                            className="h-6 w-auto"
-                            src={bank.imageUrl}
-                          />
-                        ) : null}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-forest">
-                          {bank.name}
-                        </p>
-                        <span className="inline-block mt-1 text-[10px] bg-cream px-2 py-0.5 rounded text-primary font-bold">
-                          VA:{" "}
-                          {bank.virtual_account_number ||
-                            "Available after checkout"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {featuredMethod ? (
+          {/* Section 2: Payment Instructions */}
+          {featuredMethod ? (
+            <section>
+              <h3 className="text-xl font-bold text-forest flex items-center gap-2 mb-6">
+                <span className="material-symbols-outlined text-primary">
+                  account_balance_wallet
+                </span>
+                How to Pay
+              </h3>
               <div className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm">
                 <p className="text-sm font-bold text-charcoal/40 uppercase tracking-widest mb-4">
-                  Featured Payment Instructions
+                  Payment Instructions — {featuredMethod.name}
                 </p>
                 <div className="flex flex-col gap-3 text-sm text-charcoal/70">
                   <p>
@@ -222,18 +352,16 @@ export default function PaymentMethodsPage() {
                     <span className="font-bold text-forest">
                       Virtual Account:
                     </span>{" "}
-                    {featuredMethod.virtual_account_number ||
-                      "Will appear after generation"}
+                    {featuredMethod.virtual_account_number || "—"}
                   </p>
-                  <p>
-                    <span className="font-bold text-forest">Tips:</span> Gunakan
-                    payment method ini saat checkout, lalu upload bukti
-                    pembayaran di halaman transaksi user.
+                  <p className="text-xs text-charcoal/50 mt-2">
+                    Select a payment method at checkout, then upload your
+                    payment proof on the Transactions page.
                   </p>
                 </div>
               </div>
-            ) : null}
-          </section>
+            </section>
+          ) : null}
         </div>
 
         {/* Footer Meta */}

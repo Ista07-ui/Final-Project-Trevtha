@@ -6,14 +6,20 @@ import { cartService, type CartItem } from "@/lib/services/cart";
 import paymentService from "@/lib/services/payment";
 import transactionService from "@/lib/services/transaction";
 import activityService, { type Activity } from "@/lib/services/activity";
+import promoService, { type Promo } from "@/lib/services/promo";
 
 export default function MyCartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [activePromos, setActivePromos] = useState<Promo[]>([]);
+  const [appliedPromo, setAppliedPromo] = useState<Promo | null>(null);
   const [addForm, setAddForm] = useState({
     activityId: "",
     quantity: 1,
@@ -50,6 +56,15 @@ export default function MyCartPage() {
     };
 
     fetchCart();
+  }, []);
+
+  useEffect(() => {
+    const fetchPromos = async () => {
+      const promos = await promoService.getActivePromos(1, 100);
+      setActivePromos(promos);
+    };
+
+    fetchPromos();
   }, []);
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -136,6 +151,73 @@ export default function MyCartPage() {
   const totalPrice = cartItems
     .reduce((sum, item) => sum + item.subtotal, 0)
     .toFixed(2);
+  const subtotal = Number.parseFloat(totalPrice) || 0;
+  const serviceFee = cartItems.length > 0 ? 120 : 0;
+  const promoDiscount =
+    appliedPromo && subtotal >= appliedPromo.minimum_claim_price
+      ? Math.min(appliedPromo.promo_discount_price, subtotal)
+      : 0;
+  const finalTotal = subtotal - promoDiscount + serviceFee;
+
+  useEffect(() => {
+    if (!appliedPromo) return;
+
+    if (subtotal < appliedPromo.minimum_claim_price) {
+      setAppliedPromo(null);
+      setPromoMessage(
+        `Promo removed: minimum claim is IDR ${appliedPromo.minimum_claim_price.toLocaleString("id-ID")}.`,
+      );
+      setTimeout(() => setPromoMessage(null), 3500);
+    }
+  }, [appliedPromo, subtotal]);
+
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim().toUpperCase();
+
+    if (!code) {
+      setPromoMessage("Please enter a promo code first.");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      setPromoMessage("Add item(s) to cart before applying promo.");
+      return;
+    }
+
+    setIsApplyingPromo(true);
+
+    const promos = activePromos.length > 0
+      ? activePromos
+      : await promoService.getActivePromos(1, 100);
+
+    if (activePromos.length === 0) {
+      setActivePromos(promos);
+    }
+
+    const matched = promos.find(
+      (promo) => promo.promo_code.toUpperCase() === code,
+    );
+
+    if (!matched) {
+      setAppliedPromo(null);
+      setPromoMessage("Promo code is invalid or inactive.");
+      setIsApplyingPromo(false);
+      return;
+    }
+
+    if (subtotal < matched.minimum_claim_price) {
+      setAppliedPromo(null);
+      setPromoMessage(
+        `Minimum claim for this promo is IDR ${matched.minimum_claim_price.toLocaleString("id-ID")}.`,
+      );
+      setIsApplyingPromo(false);
+      return;
+    }
+
+    setAppliedPromo(matched);
+    setPromoMessage(`Promo ${matched.promo_code} applied successfully.`);
+    setIsApplyingPromo(false);
+  };
 
   const handleCheckout = async () => {
     if (cartItems.length === 0 || isCheckingOut) {
@@ -204,13 +286,23 @@ export default function MyCartPage() {
                 Review your luxury experiences before checkout
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-3">
               <p className="text-sm font-medium text-forest/40 uppercase tracking-widest">
                 Cart Items
               </p>
               <p className="text-2xl font-bold text-forest">
                 {String(cartItems.length).padStart(2, "0")}
               </p>
+              {!isAddFormOpen ? (
+                <button
+                  onClick={() => setIsAddFormOpen(true)}
+                  disabled={activities.length === 0}
+                  className="bg-forest text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-opacity-90 transition-all disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-base">add</span>
+                  Add New Item
+                </button>
+              ) : null}
             </div>
           </header>
 
@@ -292,15 +384,6 @@ export default function MyCartPage() {
                 </div>
               ) : (
                 <>
-                  {!isAddFormOpen && (
-                    <button
-                      onClick={() => setIsAddFormOpen(true)}
-                      className="self-start mb-4 bg-forest text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-opacity-90 transition-all"
-                    >
-                      <span className="material-symbols-outlined">add</span>
-                      Add New Item
-                    </button>
-                  )}
                   {cartItems.map((item) => (
                     <div
                       key={item.id}
@@ -400,21 +483,46 @@ export default function MyCartPage() {
                   <h4 className="font-bold text-forest">Have a promo code?</h4>
                   <a
                     className="text-sm font-bold text-primary hover:underline underline-offset-4"
-                    href="#"
+                    href="/user/my-promos"
                   >
                     View Available Promos
                   </a>
                 </div>
-                <div className="flex gap-3">
-                  <input
-                    className="flex-1 rounded-xl border-forest/10 bg-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
-                    placeholder="Enter code (e.g. TREVTHA2026)"
-                    type="text"
-                  />
-                  <button className="rounded-xl bg-forest px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-charcoal">
-                    Apply
-                  </button>
-                </div>
+                {cartItems.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      <input
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        className="flex-1 rounded-xl border-forest/10 bg-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
+                        placeholder="Enter code (e.g. TREVTHA2026)"
+                        type="text"
+                      />
+                      <button
+                        onClick={handleApplyPromo}
+                        disabled={isApplyingPromo}
+                        className="rounded-xl bg-forest px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-charcoal disabled:opacity-60"
+                      >
+                        {isApplyingPromo ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+                    {promoMessage ? (
+                      <p className="text-xs font-semibold text-forest/70">
+                        {promoMessage}
+                      </p>
+                    ) : null}
+                    {appliedPromo ? (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                        Applied: {appliedPromo.promo_code} (Discount IDR{" "}
+                        {appliedPromo.promo_discount_price.toLocaleString("id-ID")})
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-forest/60">
+                    Add at least one item to your cart to apply a promo code.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -431,13 +539,15 @@ export default function MyCartPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Promo Discount</span>
-                    <span className="font-medium text-primary">-$0.00</span>
+                    <span className="font-medium text-primary">
+                      -${promoDiscount.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">
                       Service Fee (Luxury Care)
                     </span>
-                    <span className="font-medium">$120.00</span>
+                    <span className="font-medium">${serviceFee.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-2">
@@ -446,7 +556,7 @@ export default function MyCartPage() {
                       Final Total
                     </span>
                     <span className="text-3xl font-black text-primary">
-                      ${(parseFloat(totalPrice) + 120).toFixed(2)}
+                      ${finalTotal.toFixed(2)}
                     </span>
                   </div>
                   <p className="text-[10px] text-white/40 italic">
@@ -461,7 +571,11 @@ export default function MyCartPage() {
                     }
                     className="w-full rounded-xl bg-primary py-4 text-center text-lg font-extrabold text-forest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
+                    {isCheckingOut
+                      ? "Processing..."
+                      : cartItems.length === 0
+                        ? "Cart is Empty"
+                        : "Proceed to Checkout"}
                   </button>
                   <div className="flex items-center justify-center gap-2 text-xs text-white/40">
                     <span className="material-symbols-outlined text-sm">

@@ -44,6 +44,19 @@ const createMemberSinceText = () => {
   }).format(new Date());
 };
 
+const DEFAULT_USERNAME = "alextrevane_lux";
+
+const deriveUsername = (
+  storedUsername: string,
+  authEmail: string | undefined,
+): string => {
+  // If stored username is the hardcoded default or empty, always use email prefix
+  if (!storedUsername || storedUsername === DEFAULT_USERNAME) {
+    return authEmail?.split("@")[0] || storedUsername;
+  }
+  return storedUsername;
+};
+
 const mergeProfileWithAuthUser = (
   profile: UserProfile,
   authUser: AuthStorageUser | null,
@@ -57,10 +70,7 @@ const mergeProfileWithAuthUser = (
     fullName: authUser.name || profile.fullName,
     email: authUser.email || profile.email,
     phone: authUser.phoneNumber || profile.phone,
-    username:
-      profile.username && profile.username.trim().length > 0
-        ? profile.username
-        : authUser.email?.split("@")[0] || profile.username,
+    username: deriveUsername(profile.username, authUser.email),
     memberSince: profile.memberSince || createMemberSinceText(),
   };
 };
@@ -83,14 +93,32 @@ export default function PersonalInfoPage() {
       const authUser = readAuthUser();
       const stored = localStorage.getItem("trevtha_user_profile");
       if (stored) {
-        return mergeProfileWithAuthUser(JSON.parse(stored), authUser);
+        const storedProfile = JSON.parse(stored) as UserProfile;
+        // If stored profile belongs to a different user, discard it
+        if (
+          authUser &&
+          storedProfile.email &&
+          storedProfile.email !== authUser.email
+        ) {
+          return mergeProfileWithAuthUser(
+            { ...defaultProfile, username: "" },
+            authUser,
+          );
+        }
+        return mergeProfileWithAuthUser(storedProfile, authUser);
       }
 
-      return mergeProfileWithAuthUser(defaultProfile, authUser);
+      return mergeProfileWithAuthUser(
+        { ...defaultProfile, username: "" },
+        authUser,
+      );
     } catch {
       // Return default on error
     }
-    return mergeProfileWithAuthUser(defaultProfile, readAuthUser());
+    return mergeProfileWithAuthUser(
+      { ...defaultProfile, username: "" },
+      readAuthUser(),
+    );
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -115,11 +143,14 @@ export default function PersonalInfoPage() {
   };
 
   const handleCancel = () => {
+    const authUser = readAuthUser();
     const stored = localStorage.getItem("trevtha_user_profile");
     if (stored) {
-      setProfile(JSON.parse(stored));
+      setProfile(mergeProfileWithAuthUser(JSON.parse(stored), authUser));
     } else {
-      setProfile(defaultProfile);
+      setProfile(
+        mergeProfileWithAuthUser({ ...defaultProfile, username: "" }, authUser),
+      );
     }
   };
   return (

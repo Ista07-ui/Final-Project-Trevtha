@@ -147,8 +147,8 @@ export const paymentService = {
   // Delete payment method
   deletePaymentMethod: async (cardId: string): Promise<boolean> => {
     try {
-      await apiClient.post("/generate-payment-methods", { cardId });
-      console.log("✅ Payment methods refreshed after delete request:", cardId);
+      await apiClient.delete(`/delete-payment-method/${cardId}`);
+      console.log("✅ Payment method deleted:", cardId);
       return true;
     } catch (error: unknown) {
       console.error(

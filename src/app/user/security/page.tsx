@@ -74,15 +74,10 @@ export default function SecurityPage() {
       return;
     }
 
-    // Save and reset
-    setSettings({
-      ...settings,
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    // This API currently does not expose a change-password endpoint.
+    setPasswordError(
+      "Password change is not available from API yet. Endpoint change-password/update-password is not provided by backend.",
+    );
   };
 
   const handleToggle2FA = () => {
@@ -157,6 +152,13 @@ export default function SecurityPage() {
                     <span className="font-semibold">{passwordError}</span>
                   </div>
                 )}
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2 text-amber-700 text-sm">
+                  <span className="material-symbols-outlined">info</span>
+                  <span className="font-semibold">
+                    Note: travel journal API currently supports login/register and
+                    profile update, but not password update endpoint.
+                  </span>
+                </div>
                 <div>
                   <label
                     htmlFor="current-password"
