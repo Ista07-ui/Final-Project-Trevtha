@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Beach activity image">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#87d4ff"/>
+      <stop offset="100%" stop-color="#d9f4ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="980" cy="145" r="72" fill="#ffd66b"/>
+  <rect x="0" y="380" width="1200" height="220" fill="#2ca9d1"/>
+  <rect x="0" y="600" width="1200" height="200" fill="#e9c17d"/>
+  <path d="M0 470 C150 430 290 520 420 480 C560 430 680 520 820 470 C940 430 1060 500 1200 470 L1200 560 L0 560 Z" fill="#7fd6ec" opacity="0.75"/>
+  <rect x="260" y="540" width="28" height="140" fill="#7c5a36"/>
+  <path d="M274 520 C320 500 340 450 310 410 C275 420 248 460 252 500 Z" fill="#2f965f"/>
+  <path d="M276 510 C225 500 200 458 218 420 C252 422 278 454 288 490 Z" fill="#33a56a"/>
+  <text x="70" y="100" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#1f5f52">Trevtha Beach Escape</text>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Mountain activity image">
+  <defs>
+    <linearGradient id="mountain-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#89b8ff"/>
+      <stop offset="100%" stop-color="#eef5ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#mountain-sky)"/>
+  <circle cx="930" cy="150" r="66" fill="#ffe18a"/>
+  <path d="M80 680 L320 350 L580 680 Z" fill="#5b6f84"/>
+  <path d="M360 680 L620 290 L920 680 Z" fill="#4e6176"/>
+  <path d="M690 680 L920 390 L1140 680 Z" fill="#647a90"/>
+  <path d="M620 290 L690 420 L550 420 Z" fill="#ffffff" opacity="0.9"/>
+  <path d="M320 350 L370 440 L270 440 Z" fill="#ffffff" opacity="0.85"/>
+  <rect x="0" y="680" width="1200" height="120" fill="#2f5f41"/>
+  <text x="70" y="105" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#21445f">Trevtha Mountain Journey</text>
+</svg>

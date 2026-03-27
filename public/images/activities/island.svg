@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Island activity image">
+  <rect width="1200" height="800" fill="#8bd9ff"/>
+  <rect y="380" width="1200" height="420" fill="#28a8d8"/>
+  <ellipse cx="640" cy="610" rx="280" ry="90" fill="#ecc37a"/>
+  <rect x="620" y="480" width="22" height="140" fill="#7e5b35"/>
+  <path d="M630 470 C710 430 750 350 700 300 C640 330 610 380 605 440 Z" fill="#2f9a61"/>
+  <path d="M628 470 C548 430 510 360 560 310 C620 330 650 380 655 438 Z" fill="#34ab6b"/>
+  <circle cx="950" cy="120" r="62" fill="#ffe085"/>
+  <text x="70" y="106" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#155c73">Trevtha Island Retreat</text>
+</svg>

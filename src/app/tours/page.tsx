@@ -3,8 +3,57 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function ToursPage() {
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  const localFallbackByText = (value: string) => {
+    const text = value.toLowerCase();
+    if (
+      text.includes("beach") ||
+      text.includes("yacht") ||
+      text.includes("coast")
+    ) {
+      return "/images/activities/beach.svg";
+    }
+    if (
+      text.includes("mount") ||
+      text.includes("rainforest") ||
+      text.includes("expedition")
+    ) {
+      return "/images/activities/mountain.svg";
+    }
+    if (
+      text.includes("cultural") ||
+      text.includes("zen") ||
+      text.includes("temple")
+    ) {
+      return "/images/activities/temple.svg";
+    }
+    if (text.includes("safari") || text.includes("wildlife")) {
+      return "/images/activities/safari.svg";
+    }
+
+    return "/images/fallback/activity-default.svg";
+  };
+
+  const getImageSource = (
+    key: string,
+    originalSrc: string,
+    contextText: string,
+  ) => {
+    if (brokenImages[key]) {
+      return localFallbackByText(contextText);
+    }
+
+    return originalSrc;
+  };
+
+  const markBroken = (key: string) => {
+    setBrokenImages((prev) => ({ ...prev, [key]: true }));
+  };
+
   const activities = [
     {
       id: 1,
@@ -109,9 +158,14 @@ export default function ToursPage() {
             <div className="absolute inset-0 bg-linear-to-r from-forest/80 via-forest/40 to-transparent z-10"></div>
             <Image
               alt="Premier Destination Banner"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_SodyjNnAyZtTCzd5Nn-AfHHnUH1LF6hsheJ0z3PM8BmLhKQmVDQMYM6Qqy9W6UMqdZBoYzpLF1WZ9wRE-xTbHa4bxmwryD7wcKP7hLuebUb2gfQ5aXlSUJaswhVJMcNT-26CxZzPipq_U7Y6lsDSUXthaXLLO2r-rl4pIAW5uXlOd4eJvNBM_SMFXV-1k7k9Px5ErKEEPV0kYfGWrjlNjUvpeeCBJ1QV9Tlz66fvFLsCPMHixbm65tiCn29DEKpFJQyhMDuMcJuX"
+              src={getImageSource(
+                "tours-hero",
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuA_SodyjNnAyZtTCzd5Nn-AfHHnUH1LF6hsheJ0z3PM8BmLhKQmVDQMYM6Qqy9W6UMqdZBoYzpLF1WZ9wRE-xTbHa4bxmwryD7wcKP7hLuebUb2gfQ5aXlSUJaswhVJMcNT-26CxZzPipq_U7Y6lsDSUXthaXLLO2r-rl4pIAW5uXlOd4eJvNBM_SMFXV-1k7k9Px5ErKEEPV0kYfGWrjlNjUvpeeCBJ1QV9Tlz66fvFLsCPMHixbm65tiCn29DEKpFJQyhMDuMcJuX",
+                "rainforest hero",
+              )}
               fill
               className="w-full h-full object-cover"
+              onError={() => markBroken("tours-hero")}
             />
           </div>
           <div className="relative z-20 px-12 max-w-2xl">
@@ -226,9 +280,14 @@ export default function ToursPage() {
                 )}
                 <Image
                   alt={activity.title}
-                  src={activity.image}
+                  src={getImageSource(
+                    `tours-activity-${activity.id}`,
+                    activity.image,
+                    `${activity.title} ${activity.category}`,
+                  )}
                   fill
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  onError={() => markBroken(`tours-activity-${activity.id}`)}
                 />
               </div>
               <div className="p-5">
@@ -338,10 +397,15 @@ export default function ToursPage() {
                   >
                     <Image
                       alt={`Deal ${idx + 1}`}
-                      src={img}
+                      src={getImageSource(
+                        `tours-deal-left-${idx}`,
+                        img,
+                        "luxury deal card",
+                      )}
                       width={200}
                       height={200}
                       className="w-full h-full object-cover"
+                      onError={() => markBroken(`tours-deal-left-${idx}`)}
                     />
                   </div>
                 ))}
@@ -354,10 +418,15 @@ export default function ToursPage() {
                   >
                     <Image
                       alt={`Deal ${idx + 3}`}
-                      src={img}
+                      src={getImageSource(
+                        `tours-deal-right-${idx}`,
+                        img,
+                        "luxury deal card",
+                      )}
                       width={200}
                       height={200}
                       className="w-full h-full object-cover"
+                      onError={() => markBroken(`tours-deal-right-${idx}`)}
                     />
                   </div>
                 ))}

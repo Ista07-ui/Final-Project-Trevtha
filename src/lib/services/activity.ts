@@ -7,6 +7,7 @@ export interface Activity {
   title: string;
   description: string;
   imageUrl: string;
+  imageUrls?: string[];
   price: number;
   rating?: number;
   categoryId: string;
@@ -59,6 +60,59 @@ const getApiErrorMessage = (error: unknown): string => {
   return "Unknown error";
 };
 
+// Transform raw API response to Activity format
+// API returns imageUrls (array), but Activity interface expects imageUrl (string)
+const transformActivityData = (rawData: any): Activity => {
+  let imageCandidates: unknown[] = [];
+  if (Array.isArray(rawData.imageUrls)) {
+    imageCandidates = rawData.imageUrls;
+  } else if (rawData.imageUrl) {
+    imageCandidates = [rawData.imageUrl];
+  }
+
+  const normalizedImageUrls: string[] = imageCandidates.filter(
+    (value: unknown): value is string =>
+      typeof value === "string" &&
+      value.trim().length > 0 &&
+      /^https?:\/\//i.test(value),
+  );
+
+  const imageUrl = normalizedImageUrls[0] ?? "";
+
+  let facilities: string[] = [];
+  if (rawData.facilities) {
+    if (typeof rawData.facilities === "string") {
+      facilities = [rawData.facilities];
+    } else {
+      facilities = rawData.facilities;
+    }
+  }
+
+  return {
+    id: rawData.id,
+    title: rawData.title,
+    description: rawData.description,
+    imageUrl,
+    imageUrls: normalizedImageUrls,
+    price: rawData.price,
+    rating: rawData.rating,
+    categoryId: rawData.categoryId,
+    location: rawData.address || rawData.location || "",
+    country: rawData.country || "",
+    province: rawData.province || "",
+    city: rawData.city || "",
+    startDate: rawData.startDate,
+    endDate: rawData.endDate,
+    duration: rawData.duration,
+    facilities,
+    highlight: rawData.highlight || [],
+    itinerary: rawData.itinerary || [],
+    status: rawData.status || "active",
+    createdAt: rawData.createdAt || "",
+    updatedAt: rawData.updatedAt || "",
+  };
+};
+
 // Activity Service - GET activities dari API
 export const activityService = {
   // Get semua activities
@@ -75,7 +129,7 @@ export const activityService = {
         response.data.data.length,
         "items",
       );
-      return response.data.data;
+      return response.data.data.map(transformActivityData);
     } catch (error: unknown) {
       console.error(
         "❌ Failed to fetch activities:",
@@ -95,7 +149,9 @@ export const activityService = {
         "✅ Activity fetched successfully:",
         response.data.data?.title,
       );
-      return response.data.data ?? null;
+      return response.data.data
+        ? transformActivityData(response.data.data)
+        : null;
     } catch (error: unknown) {
       console.error("❌ Failed to fetch activity:", getApiErrorMessage(error));
       return null;
@@ -117,7 +173,7 @@ export const activityService = {
         response.data.data.length,
         "items",
       );
-      return response.data.data;
+      return response.data.data.map(transformActivityData);
     } catch (error: unknown) {
       console.error(
         "❌ Failed to fetch activities by category:",
@@ -138,7 +194,7 @@ export const activityService = {
         response.data.data.length,
         "items",
       );
-      return response.data.data;
+      return response.data.data.map(transformActivityData);
     } catch (error: unknown) {
       console.error(
         "❌ Failed to search activities:",
@@ -162,7 +218,7 @@ export const activityService = {
         response.data.data.length,
         "items",
       );
-      return response.data.data;
+      return response.data.data.map(transformActivityData);
     } catch (error: unknown) {
       console.error(
         "❌ Failed to fetch active activities:",
@@ -196,10 +252,13 @@ export const activityService = {
 
       if (response.data.data) {
         console.log("✅ Activity created successfully:", response.data.data.id);
-        return response.data.data;
+        return transformActivityData(response.data.data);
       }
 
-      const refreshedActivities = await activityService.getAllActivities(1, 100);
+      const refreshedActivities = await activityService.getAllActivities(
+        1,
+        100,
+      );
       const createdActivity =
         refreshedActivities.find(
           (activity) =>
@@ -241,7 +300,7 @@ export const activityService = {
 
       if (response.data.data) {
         console.log("✅ Activity updated successfully:", response.data.data.id);
-        return response.data.data;
+        return transformActivityData(response.data.data);
       }
 
       const refreshedActivity = await activityService.getActivityById(id);

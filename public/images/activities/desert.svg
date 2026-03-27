@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Desert activity image">
+  <defs>
+    <linearGradient id="dsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffc98a"/>
+      <stop offset="100%" stop-color="#ffe5c4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#dsky)"/>
+  <circle cx="930" cy="145" r="72" fill="#ffae42"/>
+  <path d="M0 560 C170 490 340 610 510 550 C700 485 860 620 1200 520 L1200 800 L0 800 Z" fill="#d99a52"/>
+  <path d="M0 640 C170 590 370 710 600 640 C830 570 980 690 1200 650 L1200 800 L0 800 Z" fill="#c6833f"/>
+  <text x="70" y="108" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#7a4515">Trevtha Desert Expedition</text>
+</svg>

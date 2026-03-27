@@ -1,8 +1,56 @@
+"use client";
+
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function PromoPage() {
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  const localFallbackByText = (value: string) => {
+    const text = value.toLowerCase();
+    if (
+      text.includes("island") ||
+      text.includes("villa") ||
+      text.includes("beach")
+    ) {
+      return "/images/activities/island.svg";
+    }
+    if (
+      text.includes("alps") ||
+      text.includes("swiss") ||
+      text.includes("ski")
+    ) {
+      return "/images/activities/snow.svg";
+    }
+    if (
+      text.includes("temple") ||
+      text.includes("japanese") ||
+      text.includes("kyoto")
+    ) {
+      return "/images/activities/temple.svg";
+    }
+
+    return "/images/fallback/activity-default.svg";
+  };
+
+  const getImageSource = (
+    key: string,
+    originalSrc: string,
+    contextText: string,
+  ) => {
+    if (brokenImages[key]) {
+      return localFallbackByText(contextText);
+    }
+
+    return originalSrc;
+  };
+
+  const markBroken = (key: string) => {
+    setBrokenImages((prev) => ({ ...prev, [key]: true }));
+  };
+
   const promos = [
     {
       code: "MAULIAKU",
@@ -64,9 +112,14 @@ export default function PromoPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent z-10"></div>
             <Image
               alt="Year-End Sale"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_SodyjNnAyZtTCzd5Nn-AfHHnUH1LF6hsheJ0z3PM8BmLhKQmVDQMYM6Qqy9W6UMqdZBoYzpLF1WZ9wRE-xTbHa4bxmwryD7wcKP7hLuebUb2gfQ5aXlSUJaswhVJMcNT-26CxZzPipq_U7Y6lsDSUXthaXLLO2r-rl4pIAW5uXlOd4eJvNBM_SMFXV-1k7k9Px5ErKEEPV0kYfGWrjlNjUvpeeCBJ1QV9Tlz66fvFLsCPMHixbm65tiCn29DEKpFJQyhMDuMcJuX"
+              src={getImageSource(
+                "promo-hero",
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuA_SodyjNnAyZtTCzd5Nn-AfHHnUH1LF6hsheJ0z3PM8BmLhKQmVDQMYM6Qqy9W6UMqdZBoYzpLF1WZ9wRE-xTbHa4bxmwryD7wcKP7hLuebUb2gfQ5aXlSUJaswhVJMcNT-26CxZzPipq_U7Y6lsDSUXthaXLLO2r-rl4pIAW5uXlOd4eJvNBM_SMFXV-1k7k9Px5ErKEEPV0kYfGWrjlNjUvpeeCBJ1QV9Tlz66fvFLsCPMHixbm65tiCn29DEKpFJQyhMDuMcJuX",
+                "promo hero",
+              )}
               fill
               className="w-full h-full object-cover opacity-30"
+              onError={() => markBroken("promo-hero")}
             />
           </div>
           <div className="relative z-20 px-12 max-w-2xl">
@@ -144,9 +197,14 @@ export default function PromoPage() {
                   )}
                   <Image
                     alt={exp.title}
-                    src={exp.image}
+                    src={getImageSource(
+                      `promo-exp-${exp.title}`,
+                      exp.image,
+                      `${exp.title} ${exp.location}`,
+                    )}
                     fill
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={() => markBroken(`promo-exp-${exp.title}`)}
                   />
                 </div>
                 <div className="p-5">

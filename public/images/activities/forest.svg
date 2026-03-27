@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Forest activity image">
+  <defs>
+    <linearGradient id="fsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8de0bb"/>
+      <stop offset="100%" stop-color="#d9f7ec"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#fsky)"/>
+  <rect y="620" width="1200" height="180" fill="#356e48"/>
+  <polygon points="150,620 260,380 370,620" fill="#2f7d4f"/>
+  <polygon points="290,620 420,320 550,620" fill="#2b7048"/>
+  <polygon points="500,620 640,340 780,620" fill="#2f7d4f"/>
+  <polygon points="760,620 900,300 1040,620" fill="#2a6943"/>
+  <rect x="405" y="620" width="30" height="100" fill="#5d3d27"/>
+  <rect x="624" y="620" width="28" height="95" fill="#5d3d27"/>
+  <text x="70" y="105" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#124f32">Trevtha Forest Adventure</text>
+</svg>

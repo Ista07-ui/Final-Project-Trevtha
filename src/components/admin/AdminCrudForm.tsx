@@ -66,6 +66,30 @@ const firstNonEmpty = (values: Record<string, string>, keys: string[]) => {
 const formatCategoryOption = (category: Category) =>
   `${category.id} | ${category.name}`;
 
+const parseImageUrlInput = (input: string) =>
+  input
+    .split(",")
+    .map((url) => url.trim())
+    .filter(Boolean);
+
+const isValidImageUrl = (value: string) => {
+  if (!value) {
+    return false;
+  }
+
+  // Allow local assets stored in /public for fallback-safe setups.
+  if (value.startsWith("/")) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 export default function AdminCrudForm({
   activeNav,
   title,
@@ -303,7 +327,10 @@ export default function AdminCrudForm({
 
       // Handle Activity API
       if (section === "activities") {
-        const categoryValue = firstNonEmpty(values, ["category_id", "category"]);
+        const categoryValue = firstNonEmpty(values, [
+          "category_id",
+          "category",
+        ]);
         const activityCategoryId = categoryValue.includes("|")
           ? categoryValue.split("|")[0].trim()
           : categoryValue;
@@ -312,18 +339,48 @@ export default function AdminCrudForm({
           "description",
           "activity_description",
         ]);
-        const activityImageInput = firstNonEmpty(values, ["image_urls", "image_url"]);
+        const activityImageInput = firstNonEmpty(values, [
+          "image_urls",
+          "image_url",
+        ]);
+        const parsedActivityImageUrls = parseImageUrlInput(activityImageInput);
         const activityAddress = firstNonEmpty(values, ["address", "location"]);
-        const activityProvince = firstNonEmpty(values, ["province", "location"]);
+        const activityProvince = firstNonEmpty(values, [
+          "province",
+          "location",
+        ]);
         const activityCity = firstNonEmpty(values, ["city", "location"]);
+
+        if (parsedActivityImageUrls.length === 0) {
+          setErrors((prev) => ({
+            ...prev,
+            image_url: "Image URL is required.",
+          }));
+          setStatus("failed");
+          setIsLoading(false);
+          return;
+        }
+
+        const invalidImageUrl = parsedActivityImageUrls.find(
+          (url) => !isValidImageUrl(url),
+        );
+
+        if (invalidImageUrl) {
+          setErrors((prev) => ({
+            ...prev,
+            image_url:
+              "Use valid image URLs. Format: https://example.com/image.jpg or /images/activities/name.svg",
+          }));
+          setStatus("failed");
+          setIsLoading(false);
+          return;
+        }
 
         const activityData = {
           categoryId: activityCategoryId,
           title: activityTitle,
           description: activityDescription,
-          imageUrls: activityImageInput
-            ? activityImageInput.split(",").map((url) => url.trim())
-            : [],
+          imageUrls: parsedActivityImageUrls,
           price: Number.parseFloat(values["price"] || "0"),
           price_discount: values["price_discount"]
             ? Number.parseFloat(values["price_discount"])
@@ -374,7 +431,11 @@ export default function AdminCrudForm({
 
       // Handle Promo API
       if (section === "promos") {
-        const promoTitle = firstNonEmpty(values, ["title", "promo_title", "promo_code"]);
+        const promoTitle = firstNonEmpty(values, [
+          "title",
+          "promo_title",
+          "promo_code",
+        ]);
         const promoDescription = firstNonEmpty(values, [
           "description",
           "promo_notes",
@@ -397,8 +458,10 @@ export default function AdminCrudForm({
               "0",
           ),
           minimum_claim_price: Number.parseFloat(
-            firstNonEmpty(values, ["minimum_claim_price", "minimum_purchase"]) ||
-              "0",
+            firstNonEmpty(values, [
+              "minimum_claim_price",
+              "minimum_purchase",
+            ]) || "0",
           ),
         };
 

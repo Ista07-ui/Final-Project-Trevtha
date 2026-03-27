@@ -159,6 +159,23 @@ Deploy to Vercel (recommended):
 
 ---
 
+## 🖼️ Image Asset Policy (Copyright-Safe)
+
+This project includes local fallback images specifically to avoid broken third-party URLs and reduce copyright risk on deployment.
+
+- Local fallback assets are stored in `public/images/fallback` and `public/images/activities`
+- Fallback SVG images in those folders are original project assets (created for this codebase)
+- UI components use a fallback chain: API image -> alternate API image -> local themed fallback -> local default fallback
+- This strategy keeps image rendering stable in Vercel even when external image links are unavailable
+
+If you add new images for production content:
+
+1. Use assets with clear usage rights (CC0/Public Domain/owned assets)
+2. Prefer hosting in your own storage or `public/images/*`
+3. Keep attribution metadata when required by license terms
+
+---
+
 ## 📄 License
 
 Educational project for Dibimbing Bootcamp

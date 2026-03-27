@@ -1,9 +1,57 @@
+"use client";
+
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function DestinationsPage() {
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  const localFallbackByText = (value: string) => {
+    const text = value.toLowerCase();
+    if (
+      text.includes("beach") ||
+      text.includes("island") ||
+      text.includes("coast")
+    ) {
+      return "/images/activities/beach.svg";
+    }
+    if (
+      text.includes("mount") ||
+      text.includes("bromo") ||
+      text.includes("hill")
+    ) {
+      return "/images/activities/mountain.svg";
+    }
+    if (
+      text.includes("city") ||
+      text.includes("yogyakarta") ||
+      text.includes("heritage")
+    ) {
+      return "/images/activities/city.svg";
+    }
+
+    return "/images/fallback/activity-default.svg";
+  };
+
+  const getImageSource = (
+    key: string,
+    originalSrc: string,
+    contextText: string,
+  ) => {
+    if (brokenImages[key]) {
+      return localFallbackByText(contextText);
+    }
+
+    return originalSrc;
+  };
+
+  const markBroken = (key: string) => {
+    setBrokenImages((prev) => ({ ...prev, [key]: true }));
+  };
+
   const activities = [
     {
       id: 1,
@@ -78,9 +126,14 @@ export default function DestinationsPage() {
           <div className="absolute inset-0 bg-black/40 z-10"></div>
           <Image
             alt="Majestic mountain landscape"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwq1FiNFkSFOQMT-Or80SlY_u2_d9pgIU8mZ7ww9uLV4cASPfYUpasM-pRvE74FkPQGBotAcSK4or_sxpT2eq2pnaVJkmMmLSJUoaa2YyfppFXE3XOoTRwNH7iZnuKdA3MnzMuS2QBwccGLADlv3fFJXd0SaMCgzg9GiASrF1q7sglGXKxKYOSXwImFSTiY5dyIvCnHFi4U4Wn25rry1_TtvceXRngfIzYAoOlfBj6YRevhymMBjAWboFM5LML0hD6pPe7MhYBNvQP"
+            src={getImageSource(
+              "destinations-hero",
+              "https://lh3.googleusercontent.com/aida-public/AB6AXuCwq1FiNFkSFOQMT-Or80SlY_u2_d9pgIU8mZ7ww9uLV4cASPfYUpasM-pRvE74FkPQGBotAcSK4or_sxpT2eq2pnaVJkmMmLSJUoaa2YyfppFXE3XOoTRwNH7iZnuKdA3MnzMuS2QBwccGLADlv3fFJXd0SaMCgzg9GiASrF1q7sglGXKxKYOSXwImFSTiY5dyIvCnHFi4U4Wn25rry1_TtvceXRngfIzYAoOlfBj6YRevhymMBjAWboFM5LML0hD6pPe7MhYBNvQP",
+              "mountain hero",
+            )}
             fill
             className="absolute inset-0 object-cover"
+            onError={() => markBroken("destinations-hero")}
           />
           <div className="relative z-20 max-w-7xl mx-auto px-4 h-full flex flex-col justify-center items-start">
             <span className="bg-primary text-forest px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
@@ -175,9 +228,16 @@ export default function DestinationsPage() {
                   </div>
                   <Image
                     alt={activity.title}
-                    src={activity.image}
+                    src={getImageSource(
+                      `destinations-activity-${activity.id}`,
+                      activity.image,
+                      `${activity.title} ${activity.category}`,
+                    )}
                     fill
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={() =>
+                      markBroken(`destinations-activity-${activity.id}`)
+                    }
                   />
                 </div>
                 <div className="p-6">
@@ -277,9 +337,16 @@ export default function DestinationsPage() {
                   <div className="relative w-full sm:w-40 h-40 shrink-0">
                     <Image
                       alt={promo.title}
-                      src={promo.image}
+                      src={getImageSource(
+                        `destinations-promo-${promo.id}`,
+                        promo.image,
+                        `${promo.title} ${promo.description}`,
+                      )}
                       fill
                       className="w-full h-full object-cover rounded-xl"
+                      onError={() =>
+                        markBroken(`destinations-promo-${promo.id}`)
+                      }
                     />
                     <div className="absolute -top-2 -left-2 bg-red-600 text-white font-bold text-[10px] px-3 py-1 rounded shadow-lg">
                       {promo.badge}
